@@ -3,6 +3,8 @@ import type {
   AppVersionInfo,
   AppVersionResponse,
   ChatAttachment,
+  CodexPetSummary,
+  CodexPetsResponse,
   PreviewComment,
   PreviewCommentStatus,
   PreviewCommentUpsertRequest,
@@ -40,6 +42,28 @@ export async function fetchSkills(): Promise<SkillSummary[]> {
   } catch {
     return [];
   }
+}
+
+// Pets packaged by the Codex `hatch-pet` skill — surfaced so the web
+// pet settings can offer one-click adoption right after the agent run
+// finishes. Returns an empty list (not an error) when the registry
+// folder is missing so the "Recently hatched" UI can simply render an
+// empty state.
+export async function fetchCodexPets(): Promise<CodexPetsResponse> {
+  try {
+    const resp = await fetch('/api/codex-pets');
+    if (!resp.ok) return { pets: [], rootDir: '' };
+    return (await resp.json()) as CodexPetsResponse;
+  } catch {
+    return { pets: [], rootDir: '' };
+  }
+}
+
+export function codexPetSpritesheetUrl(pet: CodexPetSummary): string {
+  // The daemon stamps an absolute path-prefix in `spritesheetUrl`; if
+  // that prefix is empty (default), it is already a same-origin path
+  // we can hand to <img src> or fetch() as-is.
+  return pet.spritesheetUrl;
 }
 
 export async function fetchSkill(id: string): Promise<SkillDetail | null> {

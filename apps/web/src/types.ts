@@ -25,6 +25,8 @@ import type {
   ProjectKind,
   ProjectMetadata,
   ProjectTemplate,
+  CodexPetSummary,
+  CodexPetsResponse,
   SkillDetail,
   SkillSummary,
   UpdateDeployConfigRequest,
@@ -48,6 +50,49 @@ export interface AgentModelChoice {
 
 export type AppTheme = 'system' | 'light' | 'dark';
 
+// User-tunable companion that floats over the workspace. The full catalog
+// lives in `components/pet/pets.ts`; this shape is what gets persisted to
+// localStorage so we can roundtrip a customized pet across reloads.
+export interface PetCustom {
+  // Display name shown in the overlay tooltip and settings card.
+  name: string;
+  // Single emoji or 1–2 char glyph rendered as the sprite. We render text,
+  // not an image, so any user keyboard input works without uploads.
+  glyph: string;
+  // Hex color used as the overlay halo accent.
+  accent: string;
+  // Short greeting line shown in the speech bubble on hover / first wake.
+  greeting: string;
+  // Optional uploaded sprite. Stored as a base64 data URL so it survives
+  // localStorage roundtrips without depending on daemon storage. When
+  // present, the overlay / rail / settings render the image instead of
+  // the text glyph. Cleared when the user picks "Remove image".
+  imageUrl?: string;
+  // Spritesheet config — when `frames > 1` we treat `imageUrl` as a
+  // horizontal strip of `frames` equally-sized cells and step through
+  // them at `fps` frames per second using a CSS `steps()` animation,
+  // matching the codex-pets-react sheet shape (e.g. tater/spritesheet).
+  // `frames === 1` (default) renders the image as a single static cell
+  // with the same gentle float animation as the emoji glyph.
+  frames?: number;
+  fps?: number;
+}
+
+export interface PetConfig {
+  // True once the user has explicitly picked a pet (built-in or custom).
+  // Until then, the entry view shows an "adopt" callout to drive discovery.
+  adopted: boolean;
+  // Floating overlay visibility — the wake/tuck toggle lives in Settings
+  // and on the overlay itself. Defaults to true after adoption.
+  enabled: boolean;
+  // 'custom' or a built-in id from `BUILT_IN_PETS`. We tolerate unknown ids
+  // (e.g. older builds) and fall back to the first built-in.
+  petId: string;
+  // Free-form custom pet definition. Always present so the customize panel
+  // has stable state to bind against, even when a built-in is active.
+  custom: PetCustom;
+}
+
 export interface AppConfig {
   mode: ExecMode;
   apiKey: string;
@@ -69,6 +114,10 @@ export interface AppConfig {
   // Caps the upstream completion length in API mode. Defaults to 8192 when
   // unset; raise it for providers (e.g. MiMo) that allow longer responses.
   maxTokens?: number;
+  // Optional Codex-style animated companion. Older configs that pre-date
+  // the feature land at `undefined`, which the loader normalizes to a
+  // safe default (un-adopted, hidden until the user opts in).
+  pet?: PetConfig;
 }
 
 export type AgentEvent = PersistedAgentEvent;
@@ -145,6 +194,8 @@ export type {
   ProjectKind,
   ProjectMetadata,
   ProjectTemplate,
+  CodexPetSummary,
+  CodexPetsResponse,
   SkillDetail,
   SkillSummary,
   UpdateDeployConfigRequest,

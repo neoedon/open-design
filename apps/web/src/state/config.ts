@@ -1,6 +1,21 @@
-import type { AppConfig, MediaProviderCredentials } from '../types';
+import type { AppConfig, MediaProviderCredentials, PetConfig } from '../types';
 
 const STORAGE_KEY = 'open-design:config';
+
+// Hatched out of the box, but tucked away — the user has to go through
+// either the entry-view "adopt a pet" callout or Settings → Pets to
+// summon them. Keeps the workspace quiet for first-run users.
+export const DEFAULT_PET: PetConfig = {
+  adopted: false,
+  enabled: false,
+  petId: 'mochi',
+  custom: {
+    name: 'Buddy',
+    glyph: '🦄',
+    accent: '#c96442',
+    greeting: 'Hi! I am here whenever you need me.',
+  },
+};
 
 export const DEFAULT_CONFIG: AppConfig = {
   mode: 'daemon',
@@ -14,6 +29,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   theme: 'system',
   mediaProviders: {},
   agentModels: {},
+  pet: DEFAULT_PET,
 };
 
 /** Well-known providers with pre-filled base URLs. */
@@ -23,19 +39,31 @@ export const KNOWN_PROVIDERS: Array<{ label: string; baseUrl: string; model: str
   { label: 'MiMo (Xiaomi) — Anthropic', baseUrl: 'https://token-plan-cn.xiaomimimo.com/anthropic', model: 'mimo-v2.5-pro' },
 ];
 
+function normalizePet(input: Partial<PetConfig> | undefined): PetConfig {
+  if (!input) return { ...DEFAULT_PET, custom: { ...DEFAULT_PET.custom } };
+  // Merge stored values onto defaults so newly-added fields land safely
+  // when an older config is rehydrated.
+  return {
+    ...DEFAULT_PET,
+    ...input,
+    custom: { ...DEFAULT_PET.custom, ...(input.custom ?? {}) },
+  };
+}
+
 export function loadConfig(): AppConfig {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_CONFIG };
+    if (!raw) return { ...DEFAULT_CONFIG, pet: normalizePet(DEFAULT_PET) };
     const parsed = JSON.parse(raw) as Partial<AppConfig>;
     return {
       ...DEFAULT_CONFIG,
       ...parsed,
       mediaProviders: { ...(parsed.mediaProviders ?? {}) },
       agentModels: { ...(parsed.agentModels ?? {}) },
+      pet: normalizePet(parsed.pet),
     };
   } catch {
-    return { ...DEFAULT_CONFIG };
+    return { ...DEFAULT_CONFIG, pet: normalizePet(DEFAULT_PET) };
   }
 }
 

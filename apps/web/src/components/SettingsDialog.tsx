@@ -18,6 +18,15 @@ import {
 import type { AgentInfo, AppConfig, AppTheme, AppVersionInfo, ExecMode } from '../types';
 import { MEDIA_PROVIDERS } from '../media/models';
 import type { MediaProvider } from '../media/models';
+import { PetSettings } from './pet/PetSettings';
+
+export type SettingsSection =
+  | 'execution'
+  | 'media'
+  | 'language'
+  | 'appearance'
+  | 'pet'
+  | 'about';
 
 interface Props {
   initial: AppConfig;
@@ -25,6 +34,9 @@ interface Props {
   daemonLive: boolean;
   appVersionInfo: AppVersionInfo | null;
   welcome?: boolean;
+  // Optional deep-link target so callers (e.g. the entry-view "adopt a
+  // pet" pill) can pop the dialog open straight on a specific section.
+  defaultSection?: SettingsSection;
   onSave: (cfg: AppConfig) => void;
   onClose: () => void;
   onRefreshAgents: () => void;
@@ -43,6 +55,7 @@ export function SettingsDialog({
   daemonLive,
   appVersionInfo,
   welcome,
+  defaultSection,
   onSave,
   onClose,
   onRefreshAgents,
@@ -65,7 +78,9 @@ export function SettingsDialog({
   }, [initial.theme]);
   const [showApiKey, setShowApiKey] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<'execution' | 'media' | 'language' | 'appearance' | 'about'>('execution');
+  const [activeSection, setActiveSection] = useState<SettingsSection>(
+    defaultSection ?? 'execution',
+  );
   const [languageMenuRect, setLanguageMenuRect] = useState<DOMRect | null>(null);
   const languageRef = useRef<HTMLDivElement | null>(null);
 
@@ -129,6 +144,26 @@ export function SettingsDialog({
               <span className="kicker">{t('settings.welcomeKicker')}</span>
               <h2>{t('settings.welcomeTitle')}</h2>
               <p className="subtitle">{t('settings.welcomeSubtitle')}</p>
+              {/* First-run users see a mini pet teaser inside the welcome
+                  modal so adoption is part of the warm intro rather than
+                  hidden behind another nav click. The chip nudges them
+                  toward Pets without forcing them to leave the rest of
+                  the welcome flow. */}
+              <button
+                type="button"
+                className="welcome-pet-teaser"
+                onClick={() => setActiveSection('pet')}
+              >
+                <span className="welcome-pet-glyph" aria-hidden>🐾</span>
+                <span className="welcome-pet-copy">
+                  <strong>{t('pet.welcomeTeaserTitle')}</strong>
+                  <span>{t('pet.welcomeTeaserBody')}</span>
+                </span>
+                <span className="welcome-pet-cta">
+                  {t('pet.welcomeTeaserCta')}
+                  <Icon name="chevron-right" size={12} />
+                </span>
+              </button>
             </>
           ) : (
             <>
@@ -183,6 +218,17 @@ export function SettingsDialog({
               <span>
                 <strong>{t('settings.appearance')}</strong>
                 <small>{t('settings.appearanceHint')}</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              className={`settings-nav-item${activeSection === 'pet' ? ' active' : ''}`}
+              onClick={() => setActiveSection('pet')}
+            >
+              <Icon name="sparkles" size={18} />
+              <span>
+                <strong>{t('pet.navTitle')}</strong>
+                <small>{t('pet.navHint')}</small>
               </span>
             </button>
             <button
@@ -576,6 +622,10 @@ export function SettingsDialog({
 
           {activeSection === 'appearance' ? (
             <AppearanceSection cfg={cfg} setCfg={setCfg} />
+          ) : null}
+
+          {activeSection === 'pet' ? (
+            <PetSettings cfg={cfg} setCfg={setCfg} />
           ) : null}
 
           {activeSection === 'about' ? (

@@ -17,6 +17,10 @@ import {
   sanitizeCustomModel,
 } from './agents.js';
 import { listSkills } from './skills.js';
+import {
+  listCodexPets,
+  readCodexPetSpritesheet,
+} from './codex-pets.js';
 import { listDesignSystems, readDesignSystem } from './design-systems.js';
 import { attachAcpSession } from './acp.js';
 import { attachPiRpcSession } from './pi-rpc.js';
@@ -1036,6 +1040,45 @@ export async function startServer({ port = 7456, returnServer = false } = {}) {
       res.json(serializable);
     } catch (err) {
       res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // Codex hatch-pet registry — pets packaged by the upstream `hatch-pet`
+  // skill under `${CODEX_HOME:-$HOME/.codex}/pets/`. Surfaced so the web
+  // pet settings can offer one-click adoption of recently-hatched pets.
+  app.get('/api/codex-pets', async (_req, res) => {
+    try {
+      const result = await listCodexPets({ baseUrl: '' });
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  app.get('/api/codex-pets/:id/spritesheet', async (req, res) => {
+    try {
+      const sheet = await readCodexPetSpritesheet(req.params.id);
+      if (!sheet) {
+        return res
+          .status(404)
+          .type('text/plain')
+          .send('codex pet spritesheet not found');
+      }
+      const mime =
+        sheet.ext === 'webp'
+          ? 'image/webp'
+          : sheet.ext === 'gif'
+            ? 'image/gif'
+            : 'image/png';
+      res.type(mime);
+      // Allow the web pet settings to draw the bytes onto a canvas
+      // for client-side row slicing without tripping CORS or canvas
+      // tainting.
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'no-store');
+      res.sendFile(sheet.absPath);
+    } catch (err) {
+      res.status(500).type('text/plain').send(String(err));
     }
   });
 

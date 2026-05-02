@@ -24,6 +24,7 @@ import { Icon } from './Icon';
 import { LanguageMenu } from './LanguageMenu';
 import { CenteredLoader } from './Loading';
 import { NewProjectPanel, type CreateInput } from './NewProjectPanel';
+import { PetRail } from './pet/PetRail';
 import { PromptTemplatePreviewModal } from './PromptTemplatePreviewModal';
 import { PromptTemplatesTab } from './PromptTemplatesTab';
 
@@ -45,6 +46,15 @@ interface Props {
   onDeleteProject: (id: string) => void;
   onChangeDefaultDesignSystem: (id: string) => void;
   onOpenSettings: () => void;
+  // Deep-link into Settings → Pets so the entry view's "Adopt a pet"
+  // pill drops the user straight onto the catalog instead of asking
+  // them to hunt for the section.
+  onAdoptPet: () => void;
+  // Inline adopt from the right-side rail — picks a pet by id and
+  // wakes the overlay without leaving the entry view.
+  onAdoptPetInline: (petId: string) => void;
+  // Toggle the overlay visibility (wake / tuck) from the rail.
+  onTogglePet: () => void;
 }
 
 const SIDEBAR_MIN = 320;
@@ -80,6 +90,9 @@ export function EntryView({
   onDeleteProject,
   onChangeDefaultDesignSystem,
   onOpenSettings,
+  onAdoptPet,
+  onAdoptPetInline,
+  onTogglePet,
 }: Props) {
   const t = useT();
   const [topTab, setTopTab] = useState<TopTab>('designs');
@@ -167,10 +180,14 @@ export function EntryView({
     }
   }, [sidebarWidth]);
 
+  // The right rail tracks its own collapse state internally and tells
+  // us its preferred column width via a CSS variable on the wrapper —
+  // we keep both the expanded and collapsed widths declarative here so
+  // the grid stays in sync with whatever the rail decides to render.
   return (
     <div
-      className="entry"
-      style={{ gridTemplateColumns: `${sidebarWidth}px 1fr` }}
+      className="entry has-pet-rail"
+      style={{ gridTemplateColumns: `${sidebarWidth}px 1fr auto` }}
     >
       <aside className="entry-side" style={{ width: sidebarWidth }}>
         <div className="entry-brand">
@@ -197,6 +214,30 @@ export function EntryView({
           loading={loading}
         />
         <div className="entry-side-foot">
+          <button
+            type="button"
+            className={`foot-pill pet-pill${config.pet?.adopted ? '' : ' pet-pill-fresh'}`}
+            onClick={onAdoptPet}
+            title={
+              config.pet?.adopted
+                ? t('pet.changePet')
+                : t('pet.adoptCallout')
+            }
+          >
+            <span className="pet-pill-glyph" aria-hidden>
+              {config.pet?.adopted
+                ? config.pet.petId === 'custom'
+                  ? config.pet.custom.glyph || '🦄'
+                  : '🐾'
+                : '🐾'}
+            </span>
+            <span>
+              {config.pet?.adopted
+                ? t('pet.changePet')
+                : t('pet.adoptCallout')}
+            </span>
+            {!config.pet?.adopted ? <span className="pet-pill-dot" aria-hidden /> : null}
+          </button>
           <button
             type="button"
             className="foot-pill"
@@ -314,6 +355,12 @@ export function EntryView({
           )}
         </div>
       </main>
+      <PetRail
+        config={config}
+        onAdoptInline={onAdoptPetInline}
+        onOpenPetSettings={onAdoptPet}
+        onTuck={onTogglePet}
+      />
       {previewSystem ? (
         <DesignSystemPreviewModal
           system={previewSystem}

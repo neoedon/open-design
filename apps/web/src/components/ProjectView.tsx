@@ -80,6 +80,11 @@ interface Props {
   ) => void;
   onRefreshAgents: () => void;
   onOpenSettings: () => void;
+  // Pet wiring forwarded to the chat composer so users can adopt /
+  // wake / tuck a pet without leaving the project view.
+  onAdoptPetInline?: (petId: string) => void;
+  onTogglePet?: () => void;
+  onOpenPetSettings?: () => void;
   onBack: () => void;
   onClearPendingPrompt: () => void;
   onTouchProject: () => void;
@@ -100,6 +105,9 @@ export function ProjectView({
   onAgentModelChange,
   onRefreshAgents,
   onOpenSettings,
+  onAdoptPetInline,
+  onTogglePet,
+  onOpenPetSettings,
   onBack,
   onClearPendingPrompt,
   onTouchProject,
@@ -1250,6 +1258,10 @@ export function ProjectView({
           onDeleteConversation={handleDeleteConversation}
           onRenameConversation={handleRenameConversation}
           onOpenSettings={onOpenSettings}
+          petConfig={config.pet}
+          onAdoptPet={onAdoptPetInline}
+          onTogglePet={onTogglePet}
+          onOpenPetSettings={onOpenPetSettings}
         />
         <FileWorkspace
           projectId={project.id}

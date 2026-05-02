@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { EntryView } from './components/EntryView';
 import type { CreateInput } from './components/NewProjectPanel';
+import { PetOverlay } from './components/pet/PetOverlay';
 import { ProjectView } from './components/ProjectView';
-import { SettingsDialog } from './components/SettingsDialog';
+import { SettingsDialog, type SettingsSection } from './components/SettingsDialog';
 import {
   daemonIsLive,
   fetchAppVersionInfo,
@@ -13,6 +14,7 @@ import {
 } from './providers/registry';
 import { navigate, useRoute } from './router';
 import {
+  DEFAULT_PET,
   hasAnyConfiguredProvider,
   loadConfig,
   saveConfig,
@@ -41,6 +43,9 @@ export function App() {
   const [config, setConfig] = useState<AppConfig>(() => loadConfig());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsWelcome, setSettingsWelcome] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<SettingsSection | undefined>(
+    undefined,
+  );
   const [daemonLive, setDaemonLive] = useState(false);
   const [agents, setAgents] = useState<AgentInfo[]>([]);
   const [skills, setSkills] = useState<SkillSummary[]>([]);
@@ -302,7 +307,54 @@ export function App() {
 
   const openSettings = useCallback(() => {
     setSettingsWelcome(false);
+    setSettingsSection(undefined);
     setSettingsOpen(true);
+  }, []);
+
+  const openPetSettings = useCallback(() => {
+    setSettingsWelcome(false);
+    setSettingsSection('pet');
+    setSettingsOpen(true);
+  }, []);
+
+  // Explicit enabled toggle — true = wake, false = tuck. Persists to
+  // localStorage so the overlay state survives across reloads. We keep
+  // `adopted` untouched so the entry-view CTA does not regress to
+  // "adopt me" once the user has already chosen.
+  const handleSetPetEnabled = useCallback((enabled: boolean) => {
+    setConfig((curr) => {
+      const prev = curr.pet ?? DEFAULT_PET;
+      const next: AppConfig = { ...curr, pet: { ...prev, enabled } };
+      saveConfig(next);
+      return next;
+    });
+  }, []);
+
+  const handleTuckPet = useCallback(() => handleSetPetEnabled(false), [handleSetPetEnabled]);
+
+  // Toggle wake/tuck — used by the pet rail and the composer button.
+  const handleTogglePet = useCallback(() => {
+    setConfig((curr) => {
+      const prev = curr.pet ?? DEFAULT_PET;
+      const next: AppConfig = { ...curr, pet: { ...prev, enabled: !prev.enabled } };
+      saveConfig(next);
+      return next;
+    });
+  }, []);
+
+  // Inline adopt — the right-hand pet rail and the composer's pet menu
+  // both call this to switch pets without bouncing the user into
+  // Settings. It always wakes the overlay so the change is visible.
+  const handleAdoptPet = useCallback((petId: string) => {
+    setConfig((curr) => {
+      const prev = curr.pet ?? DEFAULT_PET;
+      const next: AppConfig = {
+        ...curr,
+        pet: { ...prev, adopted: true, enabled: true, petId },
+      };
+      saveConfig(next);
+      return next;
+    });
   }, []);
 
   // When the user lands on the entry view (route.kind === 'home'), pull
@@ -331,6 +383,9 @@ export function App() {
           onAgentModelChange={handleAgentModelChange}
           onRefreshAgents={refreshAgents}
           onOpenSettings={openSettings}
+          onAdoptPetInline={handleAdoptPet}
+          onTogglePet={handleTogglePet}
+          onOpenPetSettings={openPetSettings}
           onBack={handleBack}
           onClearPendingPrompt={handleClearPendingPrompt}
           onTouchProject={handleTouchProject}
@@ -354,8 +409,16 @@ export function App() {
           onDeleteProject={handleDeleteProject}
           onChangeDefaultDesignSystem={handleChangeDefaultDesignSystem}
           onOpenSettings={openSettings}
+          onAdoptPet={openPetSettings}
+          onAdoptPetInline={handleAdoptPet}
+          onTogglePet={handleTogglePet}
         />
       )}
+      <PetOverlay
+        pet={config.pet?.enabled ? config.pet : undefined}
+        onTuck={handleTuckPet}
+        onOpenSettings={openPetSettings}
+      />
       {settingsOpen ? (
         <SettingsDialog
           initial={config}
@@ -363,6 +426,7 @@ export function App() {
           daemonLive={daemonLive}
           appVersionInfo={appVersionInfo}
           welcome={settingsWelcome}
+          defaultSection={settingsSection}
           onSave={handleConfigSave}
           onClose={() => {
             // Dismissing the welcome modal (Skip for now / backdrop click)

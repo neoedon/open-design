@@ -669,6 +669,103 @@ export interface Dict {
   'qf.cardRefs': string;
   'qf.cardSampleText': string;
 
+  // Pet (Codex-style floating companion)
+  'pet.title': string;
+  'pet.subtitle': string;
+  'pet.navTitle': string;
+  'pet.navHint': string;
+  'pet.adopt': string;
+  'pet.adoptedBadge': string;
+  'pet.adoptCallout': string;
+  'pet.changePet': string;
+  'pet.wake': string;
+  'pet.tuck': string;
+  'pet.wakeTitle': string;
+  'pet.tuckTitle': string;
+  'pet.settingsTitle': string;
+  'pet.useCustom': string;
+  'pet.customTitle': string;
+  'pet.customHint': string;
+  'pet.customGreetingPlaceholder': string;
+  'pet.fieldName': string;
+  'pet.fieldGlyph': string;
+  'pet.fieldGlyphHint': string;
+  'pet.fieldGreeting': string;
+  'pet.fieldAccent': string;
+  'pet.fieldAccentCustom': string;
+  'pet.overlayAria': string;
+  'pet.spriteAria': string;
+  'pet.spriteTitle': string;
+  // Right-side rail (entry view)
+  'pet.railAria': string;
+  'pet.railTitle': string;
+  'pet.railHint': string;
+  'pet.railExpand': string;
+  'pet.railCollapse': string;
+  'pet.railCustomFlavor': string;
+  'pet.railCustomize': string;
+  // Composer pet menu
+  'pet.composerTitle': string;
+  'pet.composerMenuTitle': string;
+  'pet.composerMenuHint': string;
+  'pet.composerOpenSettings': string;
+  // Welcome modal teaser
+  'pet.welcomeTeaserTitle': string;
+  'pet.welcomeTeaserBody': string;
+  'pet.welcomeTeaserCta': string;
+  // Image upload + spritesheet controls
+  'pet.imageUpload': string;
+  'pet.imageReplace': string;
+  'pet.imageRemove': string;
+  'pet.imageHintIdle': string;
+  'pet.imageHintActive': string;
+  'pet.fieldFrames': string;
+  'pet.fieldFramesHint': string;
+  'pet.fieldFps': string;
+  'pet.fieldFpsHint': string;
+
+  // Codex hatch-pet skill — atlas import + AI generation
+  'pet.atlasImport': string;
+  'pet.atlasImportTitle': string;
+  'pet.atlasPickerTitle': string;
+  'pet.atlasPickerHint': string;
+  'pet.atlasCancel': string;
+  'pet.atlasAdopt': string;
+  'pet.atlasRow.idle': string;
+  'pet.atlasRow.running-right': string;
+  'pet.atlasRow.running-left': string;
+  'pet.atlasRow.waving': string;
+  'pet.atlasRow.jumping': string;
+  'pet.atlasRow.failed': string;
+  'pet.atlasRow.waiting': string;
+  'pet.atlasRow.running': string;
+  'pet.atlasRow.review': string;
+  'pet.hatchTitle': string;
+  'pet.hatchHint': string;
+  'pet.hatchConcept': string;
+  'pet.hatchConceptPlaceholder': string;
+  'pet.hatchCopy': string;
+  'pet.hatchCopied': string;
+  'pet.hatchFoot': string;
+  // Slash-command popover in the chat composer
+  'pet.slashPopoverAria': string;
+  'pet.slashPopoverTitle': string;
+  'pet.slashPopoverHint': string;
+  'pet.slashPet': string;
+  'pet.slashPetWake': string;
+  'pet.slashPetTuck': string;
+  'pet.slashHatch': string;
+  'pet.slashHatchArg': string;
+  // Recently-hatched section in pet settings
+  'pet.codexTitle': string;
+  'pet.codexSubtitle': string;
+  'pet.codexSubtitleWithDir': string;
+  'pet.codexEmpty': string;
+  'pet.codexLoading': string;
+  'pet.codexRefresh': string;
+  'pet.codexAdopt': string;
+  'pet.codexAdopting': string;
+
   // Sketch editor
   'sketch.toolSelect': string;
   'sketch.toolPen': string;

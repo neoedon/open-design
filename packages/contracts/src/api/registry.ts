@@ -85,3 +85,31 @@ export interface HealthResponse {
   service?: 'daemon';
   version?: string;
 }
+
+// A pet packaged by the upstream Codex `hatch-pet` skill. Each pet is a
+// folder under `${CODEX_HOME:-$HOME/.codex}/pets/<id>/` that contains a
+// `pet.json` manifest and a `spritesheet.<png|webp>` atlas. The daemon
+// surfaces these so the web pet settings can offer one-click adoption
+// of recently-hatched pets without asking the user to re-upload the
+// file by hand.
+export interface CodexPetSummary {
+  id: string;
+  displayName: string;
+  description: string;
+  // URL on the daemon that serves the raw spritesheet bytes.
+  spritesheetUrl: string;
+  // File extension reported by the on-disk spritesheet (png / webp /
+  // gif). Useful only as a hint to the client renderer.
+  spritesheetExt: string;
+  // Unix milliseconds for the spritesheet file's mtime — lets the
+  // client sort "most recently hatched" without re-listing.
+  hatchedAt: number;
+}
+
+export interface CodexPetsResponse {
+  pets: CodexPetSummary[];
+  // Absolute path of the directory we scanned. Surfaced so the UI can
+  // tell the user where their pets live (and where to look if a pet
+  // they expect is missing).
+  rootDir: string;
+}

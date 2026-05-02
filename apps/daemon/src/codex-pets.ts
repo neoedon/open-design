@@ -1,0 +1,147 @@
+// @ts-nocheck
+// Codex hatch-pet registry. Lists pets that the upstream `hatch-pet`
+// skill packages under `${CODEX_HOME:-$HOME/.codex}/pets/<id>/`.
+//
+// On-disk shape (per the hatch-pet `references/codex-pet-contract.md`):
+//
+//   ${CODEX_HOME:-$HOME/.codex}/pets/<id>/
+//     pet.json          # { id, displayName, description, spritesheetPath }
+//     spritesheet.webp  # 1536x1872 8x9 atlas (or .png / .gif fallback)
+//
+// We scan that folder lazily on every list request — there are usually
+// only a handful of pets per machine, and watching the filesystem would
+// add a daemon-side dependency that doesn't pay off here.
+
+import { readdir, readFile, stat } from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+export function resolveCodexPetsRoot() {
+  const home = process.env.CODEX_HOME?.trim() || path.join(os.homedir(), '.codex');
+  return path.join(home, 'pets');
+}
+
+const SPRITESHEET_NAMES = [
+  'spritesheet.webp',
+  'spritesheet.png',
+  'spritesheet.gif',
+];
+
+export async function listCodexPets({ baseUrl } = {}) {
+  const root = resolveCodexPetsRoot();
+  const out = [];
+  let entries = [];
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch {
+    return { pets: [], rootDir: root };
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const dir = path.join(root, entry.name);
+    const manifestPath = path.join(dir, 'pet.json');
+    let manifest = {};
+    try {
+      const raw = await readFile(manifestPath, 'utf8');
+      manifest = JSON.parse(raw);
+    } catch {
+      // Manifest is optional — fall back to folder name for the
+      // display name so manually-dropped pets still appear.
+    }
+    const sheet = await pickSpritesheet(dir, manifest);
+    if (!sheet) continue;
+    let mtimeMs = 0;
+    try {
+      const st = await stat(sheet.absPath);
+      mtimeMs = st.mtimeMs;
+    } catch {
+      // ignore — listing should not fail on a transient stat error.
+    }
+    const id = sanitizeId(typeof manifest.id === 'string' && manifest.id ? manifest.id : entry.name);
+    const displayName =
+      typeof manifest.displayName === 'string' && manifest.displayName.trim()
+        ? manifest.displayName.trim()
+        : prettyName(entry.name);
+    const description =
+      typeof manifest.description === 'string' && manifest.description.trim()
+        ? manifest.description.trim()
+        : '';
+    const spritesheetUrl = `${baseUrl ?? ''}/api/codex-pets/${encodeURIComponent(id)}/spritesheet`;
+    out.push({
+      id,
+      displayName,
+      description,
+      spritesheetUrl,
+      spritesheetExt: sheet.ext,
+      hatchedAt: Math.floor(mtimeMs),
+    });
+  }
+  // Newest first — matches the "recently hatched" framing in the UI.
+  out.sort((a, b) => b.hatchedAt - a.hatchedAt);
+  return { pets: out, rootDir: root };
+}
+
+// Returns { absPath, ext } for the resolved spritesheet of a given pet
+// id, or null if the pet folder / sheet is missing. Used by the
+// `/api/codex-pets/:id/spritesheet` route to safely serve the file —
+// the id is sanitised on both sides so users cannot path-escape into
+// arbitrary folders under their home directory.
+export async function readCodexPetSpritesheet(id) {
+  const root = resolveCodexPetsRoot();
+  const safeId = sanitizeId(id);
+  if (!safeId) return null;
+  const dir = path.join(root, safeId);
+  // Re-resolve the manifest so a manifest-declared spritesheetPath wins
+  // when it differs from our default name (matches the hatch-pet
+  // contract).
+  let manifest = {};
+  try {
+    const raw = await readFile(path.join(dir, 'pet.json'), 'utf8');
+    manifest = JSON.parse(raw);
+  } catch {
+    // ignore; pickSpritesheet falls back to the canonical names.
+  }
+  return pickSpritesheet(dir, manifest);
+}
+
+async function pickSpritesheet(dir, manifest) {
+  const candidates = [];
+  if (typeof manifest.spritesheetPath === 'string' && manifest.spritesheetPath) {
+    // Resolve manifest path relative to the pet folder, then ensure it
+    // does not escape that folder.
+    const abs = path.resolve(dir, manifest.spritesheetPath);
+    if (abs.startsWith(dir + path.sep) || abs === dir) {
+      candidates.push(abs);
+    }
+  }
+  for (const name of SPRITESHEET_NAMES) {
+    candidates.push(path.join(dir, name));
+  }
+  for (const abs of candidates) {
+    try {
+      const st = await stat(abs);
+      if (!st.isFile()) continue;
+      return { absPath: abs, ext: path.extname(abs).slice(1).toLowerCase() || 'png' };
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+// Strip anything that might let a request path-escape, then collapse
+// dots so users cannot point at `..`. We mirror the pet folder names
+// produced by the upstream skill (lowercase + hyphens), but accept
+// alphanumerics + a small set of safe punctuation to handle pets that
+// users authored manually.
+function sanitizeId(value) {
+  return String(value ?? '')
+    .replace(/[^a-zA-Z0-9._-]/g, '')
+    .replace(/\.+/g, '.')
+    .replace(/^[._-]+|[._-]+$/g, '')
+    .slice(0, 80);
+}
+
+function prettyName(folder) {
+  return folder.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
