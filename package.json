@@ -15,6 +15,7 @@
     "tools-pack": "pnpm exec tools-pack",
     "build": "pnpm --filter @open-design/web build",
     "check:residual-js": "node --experimental-strip-types scripts/check-residual-js.ts",
+    "sync:community-pets": "node --experimental-strip-types scripts/sync-community-pets.ts",
     "test:e2e:live": "pnpm --filter @open-design/e2e test:e2e:live",
     "test": "pnpm -r --workspace-concurrency=1 --if-present run test",
     "test:ui:clean": "pnpm --filter @open-design/e2e test:ui:clean",
