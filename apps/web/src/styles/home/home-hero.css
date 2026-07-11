@@ -39,14 +39,14 @@
   transform: translateY(-50%);
   width: 26px;
   height: 26px;
-  border-radius: 50%;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #000;
+  border: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 2px;
+  padding: 0;
 }
 .home-hero__brand-mark img {
   width: 100%;

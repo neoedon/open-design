@@ -88,7 +88,7 @@ vi.mock('../../src/components/AssistantMessage', () => ({
           disabled={shareToOpenDesignBusy}
           onClick={onShareToOpenDesign}
         >
-          {shareToOpenDesignBusy ? 'Preparing package…' : 'Share to Open Design'}
+          {shareToOpenDesignBusy ? 'Preparing package…' : 'Share to viaim Design'}
         </button>
       ) : null}
     </>
@@ -364,7 +364,7 @@ describe('ChatPane streaming state', () => {
     expect(copied).toContain('error_code: AGENT_EXECUTION_FAILED');
     expect(copied).toContain('project_id: project-1');
     expect(copied).toContain('conversation_id: conv-1');
-    expect(copied).toMatch(/^json-rpc id 4: Connection reset by server\n\nOpen Design run error diagnostics/);
+    expect(copied).toMatch(/^json-rpc id 4: Connection reset by server\n\nviaim Design run error diagnostics/);
     expect(copied).not.toContain('raw_error:');
     expect(copied).not.toContain('\nerror:\n');
   });
@@ -381,7 +381,7 @@ describe('ChatPane streaming state', () => {
       agentId: 'amr',
     });
 
-    expect(text).toMatch(/^json-rpc id 4: Connection reset by server\n\nOpen Design run error diagnostics/);
+    expect(text).toMatch(/^json-rpc id 4: Connection reset by server\n\nviaim Design run error diagnostics/);
     expect(text).not.toContain('raw_error:');
     expect(text).toContain('error_code: UPSTREAM_UNAVAILABLE');
     expect(text).not.toContain('\nerror:\n');
@@ -399,7 +399,7 @@ describe('ChatPane streaming state', () => {
       agentId: 'amr',
     });
 
-    expect(text).toMatch(/^Connection dropped\. Try again\.\n\nOpen Design run error diagnostics/);
+    expect(text).toMatch(/^Connection dropped\. Try again\.\n\nviaim Design run error diagnostics/);
     expect(text).not.toContain('raw_error:');
     expect(text).toContain('error_code: AGENT_CONNECTION_DROPPED');
     expect(text).not.toContain('\nerror:\n');
@@ -709,7 +709,7 @@ Expected output:
     expect(screen.getByTestId('assistant-streaming-assistant-1').textContent).toBe('streaming');
   });
 
-  it('keeps Share to Open Design busy on the assistant turn that started packaging', () => {
+  it('keeps Share to viaim Design busy on the assistant turn that started packaging', () => {
     const onShareToOpenDesign = vi.fn();
     const completedAssistant: ChatMessage = {
       id: 'assistant-1',
@@ -757,7 +757,7 @@ Expected output:
         {...commonProps}
         messages={[
           ...initialMessages,
-          { id: 'user-2', role: 'user', content: 'Share to Open Design', createdAt: 4 },
+          { id: 'user-2', role: 'user', content: 'Share to viaim Design', createdAt: 4 },
           {
             id: 'assistant-2',
             role: 'assistant',

@@ -230,8 +230,6 @@ interface ByokProviderPreset {
 // sign-in coachmark when the user has not authorized AMR yet).
 export type SettingsHighlight = 'amr' | null;
 
-const OPEN_DESIGN_RELEASES_URL = 'https://github.com/nexu-io/open-design/releases';
-
 type AboutUpdatePrimaryAction = 'check' | 'download' | 'install' | 'quit';
 type AboutUpdateTone = 'neutral' | 'success' | 'warning' | 'error';
 
@@ -796,7 +794,7 @@ function cleanAgentVersionLabel(
 }
 
 function displayAgentName(agent: Pick<AgentInfo, 'id' | 'name'>): string {
-  return agent.id === 'amr' ? 'Open Design' : agent.name;
+  return agent.id === 'amr' ? 'viaim Design' : agent.name;
 }
 
 const AGENT_CLI_ENV_FIELDS = [
@@ -1750,10 +1748,6 @@ export function SettingsDialog({
     applyAboutUpdaterResult,
     t,
   ]);
-
-  const handleOpenReleaseNotes = useCallback(() => {
-    void openExternalUrl(OPEN_DESIGN_RELEASES_URL);
-  }, []);
 
   // Precise inverse of App.handleCompleteOnboarding: flip
   // onboardingCompleted back to false, mirror it to localStorage and the
@@ -5607,15 +5601,6 @@ export function SettingsDialog({
                             : t(aboutUpdateControl.primaryLabelKey)}
                         </button>
                       ) : null}
-                      {aboutUpdateControl.showReleaseLink ? (
-                        <button
-                          type="button"
-                          className="settings-about-release-link"
-                          onClick={handleOpenReleaseNotes}
-                        >
-                          {t('settings.updateViewReleases')}
-                        </button>
-                      ) : null}
                     </div>
                   </div>
                   <div>
@@ -7449,7 +7434,7 @@ function MediaProvidersSection({
 // Important: every snippet uses absolute paths to the daemon's current
 // Node-compatible runtime and built cli.js, fetched at runtime. macOS
 // and Linux ship a system /usr/bin/od (octal-dump) that shadows any
-// `od` we might add to PATH, and most Open Design users run from
+// `od` we might add to PATH, and most viaim Design users run from
 // source where `od` is not installed globally. The installer panel
 // must NOT reference bare `od`.
 type McpClientId =

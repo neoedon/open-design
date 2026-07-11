@@ -1228,7 +1228,7 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
         <span className="home-hero__brand-mark">
           <img src="/app-icon.svg" alt="" draggable={false} />
         </span>
-        <span className="home-hero__brand-name">Open Design</span>
+        <span className="home-hero__brand-name">{t('app.brand')}</span>
       </div>
       <h1 className="home-hero__title">{t('homeHero.title')}</h1>
       <p className="home-hero__subtitle">
@@ -4195,7 +4195,7 @@ function fallbackPluginPresetPrompt(
 const HOME_PROMPT_EXAMPLES: Record<Locale, Record<string, string[]>> = {
   "en": {
     "web-clone": [
-      "Website URL to clone: https://open-design.ai",
+      "Website URL to clone: https://example.com",
       "Website URL to clone: https://kimi.com",
     ],
     prototype: [
@@ -4331,7 +4331,7 @@ const HOME_PROMPT_EXAMPLES: Record<Locale, Record<string, string[]>> = {
   },
   "zh-CN": {
     "web-clone": [
-      "想要复刻的网站链接：https://open-design.ai",
+      "想要复刻的网站链接：https://example.com",
       "想要复刻的网站链接：https://kimi.com",
     ],
     prototype: [

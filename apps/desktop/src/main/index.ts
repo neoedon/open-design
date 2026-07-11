@@ -38,7 +38,7 @@ import {
 } from "@open-design/sidecar";
 import { readProcessStamp } from "@open-design/platform";
 
-import { createDesktopRuntime, type DesktopRuntime } from "./runtime.js";
+import { createDesktopRuntime, DEFAULT_APP_NAME, type DesktopRuntime } from "./runtime.js";
 import { beginDesktopSession, clearReportedCrash, endDesktopSessionCleanly, markDesktopSessionRunning } from "./session-lifecycle.js";
 import {
   attachDesktopChildProcessCrashReporter,
@@ -614,6 +614,9 @@ export async function runDesktopMain(
   // apps/packaged/src/logging.ts; both must stay in sync until the
   // helper is promoted to a shared workspace package.
   attachDesktopProcessErrorFilter();
+
+  const appName = options.windowTitle?.trim() || DEFAULT_APP_NAME;
+  app.setName(appName);
 
   // dev (tools-dev) enters here without a prior `whenReady` — so this
   // is where the `--lang` switch actually lands. In packaged builds

@@ -2647,6 +2647,54 @@ setImmediate(() => process.exit(0));
     }
   });
 
+  it('caps inherited Codex ultra when testing GPT-5.5 without changing config.toml', async () => {
+    const markerDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'od-conn-test-reasoning-'));
+    const argvFile = path.join(markerDir, 'argv.json');
+    const codexHome = path.join(markerDir, 'codex-home');
+    await fsp.mkdir(codexHome, { recursive: true });
+    await fsp.writeFile(
+      path.join(codexHome, 'config.toml'),
+      'model = "gpt-5.6-sol"\nmodel_reasoning_effort = "ultra"\n',
+      'utf8',
+    );
+    try {
+      await withFakeCodex(
+        `
+const fs = require('node:fs');
+fs.writeFileSync(${JSON.stringify(argvFile)}, JSON.stringify(process.argv.slice(2)));
+console.log(JSON.stringify({ type: 'item.completed', item: { type: 'agent_message', text: 'ok' } }));
+setImmediate(() => process.exit(0));
+`,
+        async () => {
+          const res = await realFetch(`${baseUrl}/api/test/connection`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              mode: 'agent',
+              agentId: 'codex',
+              model: 'gpt-5.5',
+              agentCliEnv: { codex: { CODEX_HOME: codexHome } },
+            }),
+          });
+          expect(res.status).toBe(200);
+          await expect(res.json()).resolves.toMatchObject({
+            ok: true,
+            kind: 'success',
+            model: 'gpt-5.5',
+          });
+
+          const args = JSON.parse(await fsp.readFile(argvFile, 'utf8')) as string[];
+          expect(args).toContain('model_reasoning_effort="xhigh"');
+          await expect(
+            fsp.readFile(path.join(codexHome, 'config.toml'), 'utf8'),
+          ).resolves.toContain('model_reasoning_effort = "ultra"');
+        },
+      );
+    } finally {
+      await fsp.rm(markerDir, { recursive: true, force: true });
+    }
+  });
+
   it('preserves inherited Codex API keys during connection tests', async () => {
     const markerDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'od-conn-test-codex-strip-'));
     const envFile = path.join(markerDir, 'env.json');

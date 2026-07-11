@@ -135,7 +135,7 @@ test('[P0] @critical entry chrome exposes the primary home creation surface and 
   });
 
   await gotoEntryHome(page);
-  await expect(page.getByTestId('entry-star-badge')).toBeVisible();
+  await expect(page.getByTestId('entry-star-badge')).toHaveCount(0);
   await expect(page.getByTestId('entry-use-everywhere-button')).toBeVisible();
   await expect(page.getByTestId('recent-projects-strip')).toHaveCount(0);
   // The nav rail is collapsed by default — only the topbar toggle shows.
@@ -734,22 +734,11 @@ test('[P1] Settings About reads desktop updater status and runs a manual update 
     .toEqual(['check']);
 });
 
-test('[P2] entry help menu exposes community links and topbar routes Use everywhere', async ({ page }) => {
+test('[P2] entry rail omits upstream help links and topbar routes Use everywhere', async ({ page }) => {
   await gotoEntryHome(page);
 
-  // The help launcher lives in the (collapsed-by-default) rail footer.
   await ensureRailOpen(page);
-  await page.getByTestId('entry-help-trigger').click();
-  const menu = page.locator('.entry-help-popover[role="menu"]');
-  await expect(menu).toBeVisible();
-  await expect(menu.getByRole('menuitem', { name: /Follow @OpenDesignHQ on X/i })).toHaveAttribute(
-    'href',
-    'https://x.com/OpenDesignHQ',
-  );
-  await expect(menu.getByRole('menuitem', { name: /Join Discord/i })).toHaveAttribute(
-    'href',
-    'https://discord.gg/mHAjSMV6gz',
-  );
+  await expect(page.getByTestId('entry-help-trigger')).toHaveCount(0);
 
   await page.getByTestId('entry-use-everywhere-button').click();
   await expect(page.getByRole('heading', { name: 'Integrations' })).toBeVisible();
@@ -763,10 +752,7 @@ test('[P2] entry help menu exposes community links and topbar routes Use everywh
   // collapse button on hover, which would intercept the click).
   await page.getByTestId('entry-nav-home').click();
   await expect(page.getByTestId('home-hero')).toBeVisible();
-  await page.getByTestId('entry-help-trigger').click();
-  await expect(menu).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(menu).toHaveCount(0);
+  await expect(page.getByTestId('entry-help-trigger')).toHaveCount(0);
 });
 
 test('[P1] Use everywhere guide uses daemon MCP install info and copies an agent guide', async ({ page }) => {

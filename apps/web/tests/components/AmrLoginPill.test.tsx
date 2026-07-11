@@ -77,7 +77,7 @@ describe('AmrAccountControl', () => {
     });
 
     expect(
-      screen.getByRole('group', { name: 'Open Design Cloud account status' }),
+      screen.getByRole('group', { name: 'viaim Design Cloud account status' }),
     ).toBeTruthy();
     expect(screen.getByText('Not signed in')).toBeTruthy();
     const signIn = screen.getByRole('button', { name: 'Sign in' });
@@ -283,7 +283,7 @@ describe('AmrLoginPill', () => {
     );
   });
 
-  it('adds Open Design attribution to the signed-in management link on click', () => {
+  it('adds viaim Design attribution to the signed-in management link on click', () => {
     const fetchMock = vi.fn(async () => new Response('{}', { status: 202 }));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -387,7 +387,7 @@ describe('AmrLoginPill', () => {
     });
   });
 
-  it('passes the Open Design device id in login attribution when metrics consent is enabled', async () => {
+  it('passes the viaim Design device id in login attribution when metrics consent is enabled', async () => {
     const fetchMock = vi.fn(async (input, init) => {
       const url = typeof input === 'string' ? input : (input as URL).toString();
       if (url.endsWith('/api/integrations/vela/status')) {

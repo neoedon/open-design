@@ -6,7 +6,40 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { extractCodexProviderEnvKey } from '../src/codex-config-normalize.js';
+import {
+  extractCodexModelReasoningEffort,
+  extractCodexProviderEnvKey,
+} from '../src/codex-config-normalize.js';
+
+describe('extractCodexModelReasoningEffort', () => {
+  it('reads the root model_reasoning_effort written by Codex Desktop', () => {
+    const toml = [
+      'model = "gpt-5.6-sol"',
+      'model_reasoning_effort = "ultra"',
+      '[features]',
+      'multi_agent = true',
+    ].join('\n');
+
+    expect(extractCodexModelReasoningEffort(toml)).toBe('ultra');
+  });
+
+  it('honors single quotes and inline comments', () => {
+    expect(
+      extractCodexModelReasoningEffort(
+        "model_reasoning_effort = 'max' # selected by the desktop app\n",
+      ),
+    ).toBe('max');
+  });
+
+  it('ignores profile-scoped values because they are not active without --profile', () => {
+    const toml = [
+      '[profiles.deep]',
+      'model_reasoning_effort = "ultra"',
+    ].join('\n');
+
+    expect(extractCodexModelReasoningEffort(toml)).toBeNull();
+  });
+});
 
 describe('extractCodexProviderEnvKey', () => {
   it('resolves the selected custom provider env_key', () => {

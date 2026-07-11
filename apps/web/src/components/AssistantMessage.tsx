@@ -87,8 +87,6 @@ export type QuestionFormOpenRequest = {
   submittedAnswers?: Record<string, string | string[]>;
 };
 
-const DISCORD_INVITE_URL = "https://discord.gg/mHAjSMV6gz";
-
 interface ActionNotice {
   message: string;
   url?: string;
@@ -250,7 +248,7 @@ function SkillPluginCandidateCard({
         { action },
       );
       setNotice({
-        message: `Open Design contribution task started for ${data?.path ?? "the draft"}.`,
+        message: `viaim Design contribution task started for ${data?.path ?? "the draft"}.`,
       });
     } catch (err) {
       setNotice({ message: err instanceof Error ? err.message : String(err) });
@@ -334,7 +332,7 @@ interface Props {
   ) => Promise<{ message?: string; url?: string } | void> | { message?: string; url?: string } | void;
   activePluginActionPaths?: Set<string>;
   hiddenPluginActionPaths?: Set<string>;
-  // Click handler for the post-completion "Share to Open Design" submission
+  // Click handler for the post-completion "Share to viaim Design" submission
   // action. ProjectView wires this to handleSend with the bundled
   // `od-share-to-community` trigger prompt.
   onShareToOpenDesign?: () => void;
@@ -1921,29 +1919,6 @@ function AssistantFeedback({
               onChange={(event) => setCustomReason(event.target.value)}
             />
           ) : null}
-          {reasonRating === "positive" ? (
-            <p className="assistant-feedback-discord-note">
-              Share what you made with the{" "}
-              <a
-                href={DISCORD_INVITE_URL}
-                data-testid="assistant-feedback-discord-positive"
-              >
-                Discord
-              </a>{" "}
-              community, or drop a screenshot and tell us what worked well.
-            </p>
-          ) : (
-            <p className="assistant-feedback-discord-note">
-              Share more context in{" "}
-              <a
-                href={DISCORD_INVITE_URL}
-                data-testid="assistant-feedback-discord-negative"
-              >
-                Discord
-              </a>{" "}
-              so the team can understand what went wrong and follow up directly.
-            </p>
-          )}
           <div className="assistant-feedback-actions">
             <button
               type="button"
@@ -2216,7 +2191,7 @@ function PluginActionPanel({
                   <span>
                     {actionBusy && busyKey === `contribute:${folder.path}`
                       ? "Sending..."
-                      : "Open Design PR"}
+                      : "viaim Design PR"}
                   </span>
                 </button>
                 {onRequestOpenFile ? (
@@ -2312,7 +2287,7 @@ function pathMatchesFolderFileBasename(
 }
 
 function hasPluginFinalActionHint(content: string): boolean {
-  return /\b(Add to My plugins|Open Design PR|Publish repo|plugin publish|ready to publish|ready to add)\b/i.test(
+  return /\b(Add to My plugins|viaim Design PR|Publish repo|plugin publish|ready to publish|ready to add)\b/i.test(
     content,
   );
 }

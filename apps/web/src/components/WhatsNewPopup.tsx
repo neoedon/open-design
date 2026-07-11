@@ -5,7 +5,7 @@ import type { Variants } from 'motion/react';
 import { Icon } from './Icon';
 import { Button } from '@open-design/components';
 import { useI18n } from '../i18n';
-import { fetchWhatsNew, openExternalUrl } from '../providers/registry';
+import { fetchWhatsNew } from '../providers/registry';
 import {
   localizedWhatsNewContent,
   markWhatsNewSeen,
@@ -21,9 +21,6 @@ import styles from './WhatsNewPopup.module.css';
 // Copy/image/link come from a hand-curated highlights document via
 // /api/whats-new; the card shows only when that document has content, and at
 // most once per its `id` (see ../lib/whats-new).
-
-// Fallback for the CTA when the highlight document omits an explicit link.
-const RELEASES_INDEX_URL = 'https://github.com/nexu-io/open-design/releases';
 
 const cardIn: Variants = {
   hidden: { opacity: 0, scale: 0.96, y: 12 },
@@ -44,12 +41,11 @@ const cardIn: Variants = {
 type CardModel = {
   /** Highlight identity — recorded as "seen" so the card shows once per id. */
   id: string;
-  /** Running app version, shown as the "Open Design x.y.z" eyebrow. */
+  /** Running app version, shown as the "viaim Design x.y.z" eyebrow. */
   appVersion: string;
   /** The release headline, rendered as the main serif title. */
   title: string;
   imageUrl: string | null;
-  linkUrl: string;
 };
 
 // `active` reports whether Home is the active entry view. EntryShell keeps
@@ -84,7 +80,6 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
         appVersion: info.version,
         title: localized.title,
         imageUrl: info.content.imageUrl ?? null,
-        linkUrl: localized.linkUrl ?? RELEASES_INDEX_URL,
       });
     });
     return () => {
@@ -102,7 +97,7 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
       page_name: 'home',
       area: 'whats_new_popup',
       app_version: card.appVersion,
-      has_release_notes: true,
+      has_release_notes: false,
     });
   }, [active, analytics.track, card]);
 
@@ -133,20 +128,6 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [active, card]);
 
-  const openLink = useCallback(() => {
-    if (card == null) return;
-    markWhatsNewSeen(card.id);
-    trackWhatsNewPopupClick(analytics.track, {
-      page_name: 'home',
-      area: 'whats_new_popup',
-      element: 'see_whats_new',
-      action: 'open_link',
-      app_version: card.appVersion,
-    });
-    void openExternalUrl(card.linkUrl);
-    setCard(null);
-  }, [analytics.track, card]);
-
   return (
     <AnimatePresence>
       {active && card != null ? (
@@ -161,7 +142,7 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
           exit="exit"
         >
           <div className={styles.header}>
-            <span className={styles.eyebrow}>Open Design {card.appVersion}</span>
+            <span className={styles.eyebrow}>viaim Design {card.appVersion}</span>
             <Button
               aria-label={t('whatsNew.dismissAria')}
               className={styles.close}
@@ -178,15 +159,6 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
               <h2 className={styles.title} id="whats-new-popup-title">
                 {card.title}
               </h2>
-              <div className={styles.actions}>
-                <Button
-                  data-testid="whats-new-cta"
-                  variant="subtle"
-                  onClick={openLink}
-                >
-                  {t('whatsNew.cta')}
-                </Button>
-              </div>
             </div>
             {card.imageUrl != null ? (
               <img alt="" className={styles.image} src={card.imageUrl} />

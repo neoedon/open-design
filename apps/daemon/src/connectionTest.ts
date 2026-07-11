@@ -57,6 +57,7 @@ import { aihubmixHeaders } from './integrations/aihubmix.js';
 import type { AgentCliEnvPrefs } from './app-config.js';
 import type { RuntimeAgentDef } from './runtimes/types.js';
 import { preparePromptFileForAgent, type PreparedPromptFile } from './runtimes/prompt-file.js';
+import { resolveCodexReasoningForLaunch } from './runtimes/codex-reasoning.js';
 import { configuredAllowedInternalHosts } from './origin-validation.js';
 import {
   isAllowlistedInternalHost,
@@ -2201,6 +2202,23 @@ async function testAgentConnectionInternal(
     if (input.agentId === 'opencode' || input.agentId === 'mimo') {
       if (input.agentId === 'opencode') await prepareOpenCodeConnectionTestCwd(tempDir);
     }
+    const baseEnv = spawnEnvForAgent(
+      input.agentId,
+      {
+        ...process.env,
+        ...(def.env || {}),
+      },
+      configuredAgentEnv,
+      undefined,
+      { resolvedBin: executableResolution.selectedPath },
+    );
+    const connectionReasoning = input.agentId === 'codex'
+      ? await resolveCodexReasoningForLaunch({
+          model,
+          reasoning: input.reasoning ?? null,
+          env: baseEnv,
+        })
+      : input.reasoning ?? null;
     let args: string[];
     try {
       promptFile = await preparePromptFileForAgent(def, SMOKE_PROMPT, 'connection-test');
@@ -2208,7 +2226,7 @@ async function testAgentConnectionInternal(
         SMOKE_PROMPT,
         [],
         [],
-        { model: input.model ?? null, reasoning: input.reasoning ?? null },
+        { model: input.model ?? null, reasoning: connectionReasoning ?? null },
         {
           cwd: tempDir,
           ...(promptFile ? { promptFilePath: promptFile.path } : {}),
@@ -2242,16 +2260,6 @@ async function testAgentConnectionInternal(
     }
     const stdinMode =
       def.promptViaStdin || def.streamFormat === 'acp-json-rpc' ? 'pipe' : 'ignore';
-    const baseEnv = spawnEnvForAgent(
-      input.agentId,
-      {
-        ...process.env,
-        ...(def.env || {}),
-      },
-      configuredAgentEnv,
-      undefined,
-      { resolvedBin: executableResolution.selectedPath },
-    );
     const liveModelScope = input.agentId === 'amr' ? resolveAmrProfile(baseEnv) : null;
     const mmdRouteLaunchEnv = input.agentId === 'claude'
       ? await loadMmdRouteLaunchEnv(

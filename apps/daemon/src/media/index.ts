@@ -70,6 +70,7 @@ import {
 } from './models.js';
 import { assertAndFetchExternalAsset } from '../connectionTest.js';
 import { normalizeCodexConfigFile } from '../codex-config-normalize.js';
+import { resolveCodexReasoningForLaunch } from '../runtimes/codex-reasoning.js';
 import {
   resolveCodexImagegenEnv,
   resolveCodexSubscriptionStatus,
@@ -980,7 +981,12 @@ function codexImagePrompt(ctx: MediaContext): string {
   return `${prefix} ${prompt}${aspect}`;
 }
 
-function codexImagegenArgs(ctx: MediaContext, generatedRoot: string, env: NodeJS.ProcessEnv): string[] {
+function codexImagegenArgs(
+  ctx: MediaContext,
+  generatedRoot: string,
+  env: NodeJS.ProcessEnv,
+  reasoning: string | null | undefined,
+): string[] {
   const sandbox = codexNeedsDangerFullAccessSandbox()
     ? ['--sandbox', 'danger-full-access']
     : ['--sandbox', 'workspace-write', '-c', 'sandbox_workspace_write.network_access=true'];
@@ -997,6 +1003,9 @@ function codexImagegenArgs(ctx: MediaContext, generatedRoot: string, env: NodeJS
     '--model',
     model,
   ];
+  if (reasoning && reasoning !== 'default') {
+    args.push('-c', `model_reasoning_effort="${reasoning}"`);
+  }
   if (env.OD_CODEX_DISABLE_PLUGINS === '1') args.push('--disable', 'plugins');
   for (const ref of ctx.imageRefs) args.push('-i', ref.abs);
   return args;
@@ -1083,9 +1092,10 @@ async function runCodexImagegen(
   ctx: MediaContext,
   generatedRoot: string,
   env: NodeJS.ProcessEnv,
+  reasoning: string | null | undefined,
 ): Promise<{ stderr: string; stdout: string }> {
   const codexBin = env.CODEX_BIN?.trim() || 'codex';
-  const child = spawn(codexBin, codexImagegenArgs(ctx, generatedRoot, env), {
+  const child = spawn(codexBin, codexImagegenArgs(ctx, generatedRoot, env, reasoning), {
     cwd: ctx.projectRoot,
     env,
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -1118,15 +1128,27 @@ async function runCodexImagegen(
 async function renderCodexImage(ctx: MediaContext): Promise<RenderResult> {
   const env = await resolveCodexImagegenEnv(ctx.projectRoot);
   await normalizeCodexConfigFile(env);
+  const orchestratorModel =
+    env.OD_CODEX_IMAGEGEN_MODEL?.trim() || CODEX_IMAGE_ORCHESTRATOR_MODEL;
+  const reasoning = await resolveCodexReasoningForLaunch({
+    model: orchestratorModel,
+    reasoning: null,
+    env,
+  });
   const generatedRoot = codexGeneratedImagesRoot(env);
   await mkdir(generatedRoot, { recursive: true });
-  const { stdout } = await runCodexImagegen(ctx, generatedRoot, env);
+  const { stdout } = await runCodexImagegen(
+    ctx,
+    generatedRoot,
+    env,
+    reasoning,
+  );
   const threadId = parseCodexThreadId(stdout);
   const bytes = await readCodexGeneratedImage(generatedRoot, threadId, stdout);
   const imageModel = codexImageModelLabel(ctx.model);
   return {
     bytes,
-    providerNote: `codex/${imageModel} via ${env.OD_CODEX_IMAGEGEN_MODEL?.trim() || CODEX_IMAGE_ORCHESTRATOR_MODEL} · ${ctx.aspect} · ${bytes.length} bytes`,
+    providerNote: `codex/${imageModel} via ${orchestratorModel} · ${ctx.aspect} · ${bytes.length} bytes`,
     suggestedExt: sniffImageExt(bytes),
   };
 }
