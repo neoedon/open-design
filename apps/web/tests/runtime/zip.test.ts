@@ -74,6 +74,22 @@ describe('buildZip', () => {
     expect(firstCentral.getUint32(0, true)).toBe(CENTRAL_SIG);
   });
 
+  it.each([
+    ['Uint8Array', () => new Uint8Array([99, 0, 255, 128, 42, 77]).subarray(1, 5)],
+    ['ArrayBuffer', () => new Uint8Array([0, 255, 128, 42]).buffer],
+  ])('stores %s content byte-for-byte', async (_label, makeContent) => {
+    const expected = new Uint8Array([0, 255, 128, 42]);
+    const bytes = await readBytes(buildZip([{ path: 'pixels.bin', content: makeContent() }]));
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const nameLength = view.getUint16(26, true);
+    const storedSize = view.getUint32(22, true);
+    const dataStart = 30 + nameLength;
+
+    expect(storedSize).toBe(expected.length);
+    expect(Array.from(bytes.slice(dataStart, dataStart + storedSize))).toEqual(Array.from(expected));
+    expect(view.getUint32(14, true)).toBe(crc32(expected));
+  });
+
   it('flags non-ASCII file names as UTF-8 (bit 11) in the local and central headers', async () => {
     const bytes = await readBytes(buildZip([{ path: '日本.md', content: 'x' }]));
     const expectedName = new TextEncoder().encode('日本.md');
@@ -126,5 +142,13 @@ describe('buildZip', () => {
     expect(view.getUint16(10, true)).toBe(0);
     expect(view.getUint32(12, true)).toBe(0);
     expect(view.getUint32(16, true)).toBe(0);
+  });
+
+  it('rejects values that require ZIP64 instead of truncating 16-bit fields', () => {
+    const entry = { path: 'empty.txt', content: '' };
+    expect(() => buildZip(new Array(65_536).fill(entry))).toThrow('at most 65535 entries');
+    expect(() => buildZip([{ path: 'x'.repeat(65_536), content: '' }])).toThrow(
+      'at most 65,535 bytes',
+    );
   });
 });

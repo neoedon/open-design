@@ -654,6 +654,8 @@ import {
   parseHostHeader,
 } from './origin-validation.js';
 import { registerLibraryRoutes } from './routes/library.js';
+import { registerDesignProjectsRoutes } from './routes/design-projects.js';
+import { createDesignProjectsService } from './design-projects/service.js';
 import {
   libraryExtensionAllowedOrigins,
   seedLibraryExtensionOrigins,
@@ -862,6 +864,10 @@ const ALL_SKILL_LIKE_ROOTS = [
 // the clipper / `od library import`. Derived from RUNTIME_DATA_DIR per the
 // daemon data directory contract.
 const LIBRARY_DIR = path.join(RUNTIME_DATA_DIR, 'library');
+const designProjectsService = createDesignProjectsService({
+  dataDir: RUNTIME_DATA_DIR,
+  env: process.env,
+});
 fs.mkdirSync(PROJECTS_DIR, { recursive: true });
 for (const dir of [USER_SKILLS_DIR, USER_DESIGN_SYSTEMS_DIR, BRANDS_DIR, USER_DESIGN_TEMPLATES_DIR, PLUGIN_REGISTRY_ROOTS.userPluginsRoot, LIBRARY_DIR]) {
   fs.mkdirSync(dir, { recursive: true });
@@ -2829,6 +2835,10 @@ export async function startServer({
     projectFiles: projectFileDeps,
     conversations: conversationDeps,
     auth: authDeps,
+  });
+  registerDesignProjectsRoutes(app, {
+    http: httpDeps,
+    designProjects: designProjectsService,
   });
   app.post('/api/projects/:id/figma/import', (req, res) => {
     figmaUpload.single('file')(req, res, async (err) => {
@@ -8307,6 +8317,7 @@ export async function startServer({
   assertServerContextSatisfiesRoutes({
     db,
     design,
+    designProjects: designProjectsService,
     http: httpDeps,
     paths: pathDeps,
     ids: idDeps,

@@ -188,6 +188,8 @@ const LIBRARY_ASSET_STRING_FLAGS = new Set([
   'daemon-url', 'kind', 'tag', 'source', 'date', 'query', 'project', 'label', 'out', 'dir',
 ]);
 const LIBRARY_ASSET_BOOLEAN_FLAGS = new Set(['help', 'h', 'json']);
+const DESIGN_PROJECTS_STRING_FLAGS = new Set(['daemon-url', 'out']);
+const DESIGN_PROJECTS_BOOLEAN_FLAGS = new Set(['help', 'h', 'json']);
 const DIAGNOSTICS_STRING_FLAGS = new Set(['daemon-url', 'output']);
 const DIAGNOSTICS_BOOLEAN_FLAGS = new Set(['help', 'h', 'json']);
 const CONFIG_STRING_FLAGS = new Set(['daemon-url', 'value', 'value-json']);
@@ -339,6 +341,7 @@ const SUBCOMMAND_MAP = {
   doctor: runDoctor,
   config: runConfig,
   library: runLibrary,
+  'design-projects': runDesignProjects,
   figma: runFigma,
 };
 
@@ -563,6 +566,10 @@ function printRootHelp() {
       Automations tab, so an external agent (hermes, openclaw, ...) can
       schedule, trigger, or harvest results from a routine without
       opening the web UI.
+
+  od design-projects <status|snapshot|sync> [--json]
+      Inspect or refresh the Feishu-backed design project snapshot. The sync
+      command calls the same local-daemon endpoint as the web dashboard.
 
   od memory tree <list|view|edit|move> [args]
       Inspect and edit the memory tree that is injected into agent prompts.
@@ -7381,6 +7388,150 @@ Common options:
     default:
       console.error(`unknown subcommand: od atoms ${sub}`);
       process.exit(2);
+  }
+}
+
+function printDesignProjectsHelp() {
+  console.log(`Usage: od design-projects <command> [options]
+
+Commands:
+  status                    Show local sync readiness and snapshot metadata.
+  snapshot                  Read the current runtime snapshot.
+  sync                      Pull a fresh snapshot from Feishu Base.
+
+Options:
+  --out <path>              Write snapshot JSON to this client-side path.
+                            With sync, the CLI fetches the refreshed snapshot
+                            after the POST succeeds and writes it locally.
+  --json                    Emit machine-readable JSON.
+  --daemon-url <url>        Override daemon URL (default: auto-discover).`);
+}
+
+async function writeDesignProjectsSnapshotOut(snapshot, out) {
+  const body = `${JSON.stringify(snapshot, null, 2)}\n`;
+  const { open, rename, unlink } = await import('node:fs/promises');
+  const { randomBytes } = await import('node:crypto');
+  const { basename: pathBasename, dirname: pathDirname, join: pathJoin } = await import('node:path');
+  const tempPath = pathJoin(
+    pathDirname(out),
+    `.${pathBasename(out)}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`,
+  );
+  let handle;
+  try {
+    handle = await open(tempPath, 'wx', 0o600);
+    await handle.writeFile(body, 'utf8');
+    await handle.sync();
+    await handle.close();
+    handle = undefined;
+    await rename(tempPath, out);
+  } catch (error) {
+    await handle?.close().catch(() => undefined);
+    await unlink(tempPath).catch(() => undefined);
+    throw error;
+  }
+  return Buffer.byteLength(body);
+}
+
+function printDesignProjectsSnapshotSummary(snapshot) {
+  const summary = snapshot?.summary ?? {};
+  console.log(`Design projects: ${summary.totalRecords ?? 0} total, ${summary.openRecords ?? 0} open, ${summary.completedRecords ?? 0} completed`);
+  console.log(`Source: ${snapshot?.source?.title ?? 'unknown'} / ${snapshot?.source?.tableName ?? 'unknown'}`);
+  console.log(`Synced: ${snapshot?.syncedAt ?? 'not synced'}`);
+}
+
+async function runDesignProjects(args) {
+  const sub = args.find((arg) => ['status', 'snapshot', 'sync', 'help'].includes(arg)) || '';
+  const helpRequested = sub === 'help' || args.includes('-h') || args.includes('--help');
+  if (!sub || helpRequested) {
+    printDesignProjectsHelp();
+    process.exit(helpRequested ? 0 : 2);
+  }
+  const index = args.indexOf(sub);
+  const rest = [...args.slice(0, index), ...args.slice(index + 1)];
+  let flags;
+  try {
+    flags = parseFlags(rest, {
+      string: DESIGN_PROJECTS_STRING_FLAGS,
+      boolean: DESIGN_PROJECTS_BOOLEAN_FLAGS,
+    });
+  } catch (error) {
+    console.error(error.message);
+    process.exit(2);
+  }
+  const positional = positionalArgs(rest, DESIGN_PROJECTS_STRING_FLAGS);
+  if (positional.length > 0) {
+    console.error(`unexpected argument: ${positional[0]}`);
+    process.exit(2);
+  }
+  if (flags.out && sub === 'status') {
+    console.error('--out is only valid with snapshot or sync');
+    process.exit(2);
+  }
+  const base = await cliDaemonBaseUrl(flags);
+  const writeJson = (value) => process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
+
+  try {
+    if (sub === 'status') {
+      const response = await fetch(`${base}/api/design-projects/status`);
+      if (!response.ok) return structuredHttpFailure(response);
+      const data = await response.json();
+      if (flags.json) return writeJson(data);
+      console.log(`Sync: ${data.canSync ? 'ready' : `unavailable (${data.reason ?? 'unknown'})`}`);
+      console.log(`Configuration: ${data.configured ? 'present' : 'missing'}`);
+      console.log(`lark-cli: ${data.cliAvailable ? 'available' : 'missing'}`);
+      if (data.snapshot) {
+        console.log(`Snapshot: ${data.snapshot.summary.totalRecords} records, synced ${data.snapshot.syncedAt}`);
+      } else {
+        console.log('Snapshot: not available');
+      }
+      return;
+    }
+
+    if (sub === 'snapshot') {
+      const response = await fetch(`${base}/api/design-projects/snapshot`);
+      if (!response.ok) return structuredHttpFailure(response, 'snapshot-not-found');
+      const snapshot = await response.json();
+      if (flags.out) {
+        const bytes = await writeDesignProjectsSnapshotOut(snapshot, flags.out);
+        if (flags.json) return writeJson({ ok: true, out: flags.out, bytes });
+        console.log(`Wrote ${flags.out} (${bytes} bytes)`);
+        return;
+      }
+      if (flags.json) return writeJson(snapshot);
+      printDesignProjectsSnapshotSummary(snapshot);
+      return;
+    }
+
+    if (sub === 'sync') {
+      const response = await fetch(`${base}/api/design-projects/sync`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      });
+      if (!response.ok) return structuredHttpFailure(response);
+      const result = await response.json();
+      if (flags.out) {
+        const snapshotResponse = await fetch(`${base}/api/design-projects/snapshot`);
+        if (!snapshotResponse.ok) return structuredHttpFailure(snapshotResponse, 'snapshot-not-found');
+        const snapshot = await snapshotResponse.json();
+        const bytes = await writeDesignProjectsSnapshotOut(snapshot, flags.out);
+        if (flags.json) return writeJson({ ...result, out: flags.out, bytes });
+        console.log(`Synced ${result.snapshot.summary.totalRecords} design projects and wrote ${flags.out} (${bytes} bytes)`);
+        return;
+      }
+      if (flags.json) return writeJson(result);
+      console.log(
+        `Synced ${result.snapshot.summary.totalRecords} design projects (${result.snapshot.summary.openRecords} open, ${result.snapshot.summary.completedRecords} completed).`,
+      );
+      return;
+    }
+
+    console.error(`unknown subcommand: od design-projects ${sub}`);
+    printDesignProjectsHelp();
+    process.exit(2);
+  } catch (error) {
+    surfaceFetchError(error, base);
+    process.exit(3);
   }
 }
 

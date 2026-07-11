@@ -94,6 +94,13 @@ import { DesignsTab } from './DesignsTab';
 import { DesignSystemsTab } from './DesignSystemsTab';
 import { BrandsTab } from './BrandsTab';
 import { EntryNavRail, type EntryView as EntryViewKind } from './EntryNavRail';
+import {
+  BrandAssetsView,
+  DesignProjectsView,
+  DesignProjectSyncView,
+  FigmaDashboardView,
+  ImageSlicerView,
+} from './vision-design';
 import { LibrarySection } from './LibrarySection';
 import { UpdaterPopup } from './UpdaterPopup';
 import { WhatsNewPopup } from './WhatsNewPopup';
@@ -431,6 +438,11 @@ function navElementForView(
   | 'automations'
   | 'plugins'
   | 'design_systems'
+  | 'brand_assets'
+  | 'image_slicer'
+  | 'design_projects'
+  | 'design_project_sync'
+  | 'figma_dashboard'
   | 'integrations'
   | null {
   switch (next) {
@@ -444,6 +456,16 @@ function navElementForView(
       return 'plugins';
     case 'design-systems':
       return 'design_systems';
+    case 'brand-assets':
+      return 'brand_assets';
+    case 'image-slicer':
+      return 'image_slicer';
+    case 'design-projects':
+      return 'design_projects';
+    case 'design-project-sync':
+      return 'design_project_sync';
+    case 'figma-dashboard':
+      return 'figma_dashboard';
     case 'brands':
       // No dedicated brands analytics element yet; reuse the design_systems
       // slot since Brands replaces that nav destination.
@@ -1135,6 +1157,21 @@ export function EntryShell({
                   />
                 </div>
               )}
+            </div>
+            <div data-testid="entry-view-brand-assets" data-active={view === 'brand-assets' ? 'true' : 'false'} {...inactiveViewProps(view === 'brand-assets')}>
+              <BrandAssetsView active={view === 'brand-assets'} />
+            </div>
+            <div data-testid="entry-view-image-slicer" data-active={view === 'image-slicer' ? 'true' : 'false'} {...inactiveViewProps(view === 'image-slicer')}>
+              <ImageSlicerView />
+            </div>
+            <div data-testid="entry-view-design-projects" data-active={view === 'design-projects' ? 'true' : 'false'} {...inactiveViewProps(view === 'design-projects')}>
+              <DesignProjectsView active={view === 'design-projects'} />
+            </div>
+            <div data-testid="entry-view-design-project-sync" data-active={view === 'design-project-sync' ? 'true' : 'false'} {...inactiveViewProps(view === 'design-project-sync')}>
+              <DesignProjectSyncView active={view === 'design-project-sync'} />
+            </div>
+            <div data-testid="entry-view-figma-dashboard" data-active={view === 'figma-dashboard' ? 'true' : 'false'} {...inactiveViewProps(view === 'figma-dashboard')}>
+              <FigmaDashboardView active={view === 'figma-dashboard'} />
             </div>
             {LIBRARY_UI_VISIBLE ? (
               <div data-testid="entry-view-library" data-active={view === 'library' ? 'true' : 'false'} {...inactiveViewProps(view === 'library')}>
@@ -2466,7 +2503,7 @@ function OnboardingView({
   // landing. No stepper, no runtime cards — just the cloud CTA, a secondary
   // link into the full runtime chooser, and a top-left language/theme bar.
   if (step === 0 && connectExpanded === null) {
-    const activeTheme: AppTheme = config.theme ?? 'system';
+    const activeTheme: AppTheme = config.theme ?? 'light';
     const resolvedDark =
       activeTheme === 'dark' ||
       (activeTheme === 'system' &&
