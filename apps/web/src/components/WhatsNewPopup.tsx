@@ -22,6 +22,25 @@ import styles from './WhatsNewPopup.module.css';
 // /api/whats-new; the card shows only when that document has content, and at
 // most once per its `id` (see ../lib/whats-new).
 
+<<<<<<< HEAD
+=======
+function withoutOpenDesignDestination(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const path = url.pathname.toLowerCase();
+    if (host === 'open-design.ai' || host.endsWith('.open-design.ai')) return null;
+    if (host === 'github.com' && path.startsWith('/nexu-io/open-design')) return null;
+    if (host === 'x.com' && path.startsWith('/opendesignhq')) return null;
+    if (host === 'discord.gg' && path.startsWith('/mhajsmv6gz')) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
 const cardIn: Variants = {
   hidden: { opacity: 0, scale: 0.96, y: 12 },
   visible: {
@@ -46,6 +65,10 @@ type CardModel = {
   /** The release headline, rendered as the main serif title. */
   title: string;
   imageUrl: string | null;
+<<<<<<< HEAD
+=======
+  linkUrl: string | null;
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
 };
 
 // `active` reports whether Home is the active entry view. EntryShell keeps
@@ -80,6 +103,10 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
         appVersion: info.version,
         title: localized.title,
         imageUrl: info.content.imageUrl ?? null,
+<<<<<<< HEAD
+=======
+        linkUrl: withoutOpenDesignDestination(localized.linkUrl),
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
       });
     });
     return () => {
@@ -128,6 +155,23 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [active, card]);
 
+<<<<<<< HEAD
+=======
+  const openLink = useCallback(() => {
+    if (card?.linkUrl == null) return;
+    markWhatsNewSeen(card.id);
+    trackWhatsNewPopupClick(analytics.track, {
+      page_name: 'home',
+      area: 'whats_new_popup',
+      element: 'see_whats_new',
+      action: 'open_link',
+      app_version: card.appVersion,
+    });
+    void openExternalUrl(card.linkUrl);
+    setCard(null);
+  }, [analytics.track, card]);
+
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
   return (
     <AnimatePresence>
       {active && card != null ? (
@@ -159,6 +203,20 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
               <h2 className={styles.title} id="whats-new-popup-title">
                 {card.title}
               </h2>
+<<<<<<< HEAD
+=======
+              {card.linkUrl ? (
+                <div className={styles.actions}>
+                  <Button
+                    data-testid="whats-new-cta"
+                    variant="subtle"
+                    onClick={openLink}
+                  >
+                    {t('whatsNew.cta')}
+                  </Button>
+                </div>
+              ) : null}
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
             </div>
             {card.imageUrl != null ? (
               <img alt="" className={styles.image} src={card.imageUrl} />

@@ -94,6 +94,13 @@ import { DesignsTab } from './DesignsTab';
 import { DesignSystemsTab } from './DesignSystemsTab';
 import { BrandsTab } from './BrandsTab';
 import { EntryNavRail, type EntryView as EntryViewKind } from './EntryNavRail';
+import {
+  BrandAssetsView,
+  DesignProjectsView,
+  DesignProjectSyncView,
+  FigmaDashboardView,
+  ImageSlicerView,
+} from './vision-design';
 import { LibrarySection } from './LibrarySection';
 import { UpdaterPopup } from './UpdaterPopup';
 import { WhatsNewPopup } from './WhatsNewPopup';
@@ -203,7 +210,11 @@ type OnboardingAgentTestState =
   | { status: 'running'; inputKey: string }
   | { status: 'done'; inputKey: string; result: ConnectionTestResponse };
 
+<<<<<<< HEAD
 // The topbar chips (model switcher and Use everywhere)
+=======
+// The topbar chips (model switcher, Use everywhere)
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
 // collapse into the settings dropdown when the viewport gets
 // narrow. The transition is driven entirely by CSS @media queries
 // in `entry-layout.css` so server and client render identical
@@ -431,6 +442,11 @@ function navElementForView(
   | 'automations'
   | 'plugins'
   | 'design_systems'
+  | 'brand_assets'
+  | 'image_slicer'
+  | 'design_projects'
+  | 'design_project_sync'
+  | 'figma_dashboard'
   | 'integrations'
   | null {
   switch (next) {
@@ -444,6 +460,16 @@ function navElementForView(
       return 'plugins';
     case 'design-systems':
       return 'design_systems';
+    case 'brand-assets':
+      return 'brand_assets';
+    case 'image-slicer':
+      return 'image_slicer';
+    case 'design-projects':
+      return 'design_projects';
+    case 'design-project-sync':
+      return 'design_project_sync';
+    case 'figma-dashboard':
+      return 'figma_dashboard';
     case 'brands':
       // No dedicated brands analytics element yet; reuse the design_systems
       // slot since Brands replaces that nav destination.
@@ -1135,6 +1161,21 @@ export function EntryShell({
                   />
                 </div>
               )}
+            </div>
+            <div data-testid="entry-view-brand-assets" data-active={view === 'brand-assets' ? 'true' : 'false'} {...inactiveViewProps(view === 'brand-assets')}>
+              <BrandAssetsView />
+            </div>
+            <div data-testid="entry-view-image-slicer" data-active={view === 'image-slicer' ? 'true' : 'false'} {...inactiveViewProps(view === 'image-slicer')}>
+              <ImageSlicerView />
+            </div>
+            <div data-testid="entry-view-design-projects" data-active={view === 'design-projects' ? 'true' : 'false'} {...inactiveViewProps(view === 'design-projects')}>
+              <DesignProjectsView active={view === 'design-projects'} />
+            </div>
+            <div data-testid="entry-view-design-project-sync" data-active={view === 'design-project-sync' ? 'true' : 'false'} {...inactiveViewProps(view === 'design-project-sync')}>
+              <DesignProjectSyncView active={view === 'design-project-sync'} />
+            </div>
+            <div data-testid="entry-view-figma-dashboard" data-active={view === 'figma-dashboard' ? 'true' : 'false'} {...inactiveViewProps(view === 'figma-dashboard')}>
+              <FigmaDashboardView active={view === 'figma-dashboard'} />
             </div>
             {LIBRARY_UI_VISIBLE ? (
               <div data-testid="entry-view-library" data-active={view === 'library' ? 'true' : 'false'} {...inactiveViewProps(view === 'library')}>
@@ -2466,7 +2507,7 @@ function OnboardingView({
   // landing. No stepper, no runtime cards — just the cloud CTA, a secondary
   // link into the full runtime chooser, and a top-left language/theme bar.
   if (step === 0 && connectExpanded === null) {
-    const activeTheme: AppTheme = config.theme ?? 'system';
+    const activeTheme: AppTheme = config.theme ?? 'light';
     const resolvedDark =
       activeTheme === 'dark' ||
       (activeTheme === 'system' &&
@@ -2497,7 +2538,11 @@ function OnboardingView({
           <span
             className="onboarding-cloud__logo"
             role="img"
+<<<<<<< HEAD
             aria-label={t('app.brand')}
+=======
+            aria-label="viaim Design"
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
           />
           <h1 className="onboarding-cloud__title">{t('settings.onboardingCloudTitle')}</h1>
           <p className="onboarding-cloud__body">{t('settings.onboardingCloudBody')}</p>
@@ -2591,7 +2636,11 @@ function OnboardingView({
           )}
         </div>
         <footer className="onboarding-cloud__footer">
+<<<<<<< HEAD
           © {new Date().getFullYear()} {t('app.brand')} · {t('settings.onboardingCloudRights')}
+=======
+          © {new Date().getFullYear()} viaim Design · {t('settings.onboardingCloudRights')}
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
         </footer>
       </section>
     );

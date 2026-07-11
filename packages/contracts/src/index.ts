@@ -13,6 +13,7 @@ export * from './api/context.js';
 export * from './api/connectors.js';
 export * from './api/comments.js';
 export * from './api/connectionTest.js';
+export * from './api/design-projects.js';
 export * from './api/export.js';
 export * from './api/files.js';
 export * from './api/figma.js';

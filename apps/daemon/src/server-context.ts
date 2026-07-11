@@ -3,6 +3,7 @@ import type { SkillInfo } from './skills.js';
 import type { DesignSystemSummary } from './design-systems/index.js';
 import type { RoutineRoutesService } from './routes/routine.js';
 import type { OpenDesignPublicMetadataService } from './services/open-design-public-metadata.js';
+import type { DesignProjectsService } from './design-projects/service.js';
 
 export interface HttpDeps {
   createSseResponse: (...args: any[]) => any;
@@ -101,6 +102,7 @@ export interface TelemetryDeps {
 export interface ServerContext {
   db: any;
   design: any;
+  designProjects: DesignProjectsService;
   http: HttpDeps;
   paths: PathDeps;
   ids: any;

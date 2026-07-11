@@ -1015,6 +1015,11 @@ export interface Dict {
   'entry.navTasks': string;
   'entry.navPlugins': string;
   'entry.navDesignSystems': string;
+  'entry.navBrandAssets': string;
+  'entry.navImageSlicer': string;
+  'entry.navDesignProjects': string;
+  'entry.navDesignProjectSync': string;
+  'entry.navFigmaDashboard': string;
   'entry.navBrands': string;
   'entry.navIntegrations': string;
   'workspaceTabs.project': string;

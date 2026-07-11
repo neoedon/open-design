@@ -26,7 +26,11 @@ function setNavigatorLanguages(languages: readonly string[]): void {
   });
 }
 
+<<<<<<< HEAD
 describe('detectInitialLocale defaults', () => {
+=======
+describe('detectInitialLocale viaim defaults', () => {
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
   beforeEach(() => {
     window.localStorage.clear();
     setNavigatorLanguages(['en-US']);
@@ -36,29 +40,46 @@ describe('detectInitialLocale defaults', () => {
     window.localStorage.clear();
   });
 
+<<<<<<< HEAD
   it('preserves a manually selected language', () => {
+=======
+  it('preserves a manually-tagged localStorage pick', () => {
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
     setStoredLocale('ja', 'manual');
     setNavigatorLanguages(['fr-FR']);
 
     expect(detectInitialLocale()).toBe('ja');
   });
 
+<<<<<<< HEAD
   it('ignores an untagged legacy value and defaults to Simplified Chinese', () => {
+=======
+  it('ignores an untagged legacy value and uses Simplified Chinese', () => {
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
     setStoredLocale('ja', 'untagged');
 
     expect(detectInitialLocale()).toBe('zh-CN');
   });
 
+<<<<<<< HEAD
   it('defaults to Simplified Chinese when a manual value is unsupported', () => {
+=======
+  it('uses Simplified Chinese when a manual value is unsupported', () => {
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
     setStoredLocale('xx-YY', 'manual');
     setNavigatorLanguages(['de-DE']);
 
     expect(detectInitialLocale()).toBe('zh-CN');
   });
 
+<<<<<<< HEAD
   it('does not let the browser language override the product default', () => {
     setNavigatorLanguages(['ko-KR', 'fr-FR']);
 
+=======
+  it('defaults to Simplified Chinese regardless of browser language', () => {
+    setNavigatorLanguages(['ko-KR']);
+>>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
     expect(detectInitialLocale()).toBe('zh-CN');
   });
 });

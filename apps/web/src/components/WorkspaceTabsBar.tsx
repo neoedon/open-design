@@ -155,6 +155,11 @@ function reviveTab(value: unknown): WorkspaceChromeTab | null {
       || view === 'tasks'
       || view === 'plugins'
       || view === 'design-systems'
+      || view === 'brand-assets'
+      || view === 'image-slicer'
+      || view === 'design-projects'
+      || view === 'design-project-sync'
+      || view === 'figma-dashboard'
       || view === 'integrations'
     ) {
       return { id, kind: 'entry', view, createdAt, lastActiveAt };
@@ -195,7 +200,7 @@ function normalizeTabsState(state: WorkspaceTabsState): WorkspaceTabsState {
   let sourceTabs = state.tabs.length > 0 ? state.tabs : [createEntryTab('home')];
 
   // Deduplicate entry tabs (singleton constraint): all sidebar sections
-  // (home / projects / tasks / design-systems / plugins / integrations) share
+  // (home / projects / Vision Design tools / tasks / plugins / integrations) share
   // ONE entry tab that switches its view in place. Keep the canonical one:
   // 1. Is one of them currently active?
   // 2. Otherwise, pick the one with highest lastActiveAt.
@@ -314,8 +319,8 @@ function syncStateToRoute(state: WorkspaceTabsState, route: Route): WorkspaceTab
   const current = normalizeTabsState(state);
   const currentActive = current.tabs.find((tab) => tab.id === current.activeTabId) ?? null;
 
-  // 1. If we are navigating to any entry view (home / projects / tasks /
-  // design-systems / plugins / integrations / onboarding), reuse the single
+  // 1. If we are navigating to any entry view (home / projects / Vision Design
+  // tools / tasks / plugins / integrations / onboarding), reuse the single
   // entry tab and switch its view IN PLACE — all sidebar sections collapse
   // into the one leftmost tab. Only create one if none exists.
   if (route.kind === 'home') {
@@ -1195,6 +1200,11 @@ function displayTabFor(
     tasks: t('entry.navTasks'),
     plugins: t('entry.navPlugins'),
     'design-systems': t('entry.navDesignSystems'),
+    'brand-assets': t('entry.navBrandAssets'),
+    'image-slicer': t('entry.navImageSlicer'),
+    'design-projects': t('entry.navDesignProjects'),
+    'design-project-sync': t('entry.navDesignProjectSync'),
+    'figma-dashboard': t('entry.navFigmaDashboard'),
     library: 'Library',
     brands: t('entry.navBrands'),
     integrations: t('entry.navIntegrations'),
@@ -1206,6 +1216,11 @@ function displayTabFor(
     tasks: 'kanban',
     plugins: 'grid',
     'design-systems': 'blocks',
+    'brand-assets': 'swatchbook',
+    'image-slicer': 'image',
+    'design-projects': 'layout',
+    'design-project-sync': 'refresh',
+    'figma-dashboard': 'blocks',
     library: 'image',
     brands: 'blocks',
     integrations: 'link',
