@@ -2,8 +2,13 @@
 //
 // Renders a narrow icon-only column. The first slot is the brand logo,
 // followed by the primary destinations users expect to keep in reach:
+<<<<<<< HEAD
 // New project, home, projects, design systems, Vision Design utilities,
 // automations, plugins, and integrations.
+=======
+// New project, home, projects, brand kit, automations, plugins,
+// and integrations.
+>>>>>>> main
 // Language switching and other account-scoped controls live behind the
 // floating settings cog in the top-right corner of the main content.
 

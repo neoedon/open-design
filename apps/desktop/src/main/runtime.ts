@@ -25,11 +25,11 @@ import { renderDeckSlides } from "./deck-capture.js";
 import { openValidatedDirectory } from "./open-path.js";
 import { exportArtifact as exportArtifactFromHtml } from "./artifact-export.js";
 import { createElectronPdfTarget, exportPdfFromHtml, savePrintReadyDocumentAsPdf } from "./pdf-export.js";
-import { SPLASH_VIDEO_DATA_URL } from "./splash-video.js";
 import type { PrintReadyPdfOptions } from "./pdf-export.js";
 import type { DesktopUpdater } from "./updater.js";
 
 const execFileAsync = promisify(execFile);
+export const DEFAULT_APP_NAME = "viaim Design";
 
 /**
  * Result of validating a candidate path before exposing it to a
@@ -249,7 +249,7 @@ const MIN_SPLASH_MS = 2000;
 // While the splash is up, the real web app loads in a hidden main window. We
 // reveal it only once the web bundle reports it has actually mounted (it sets
 // `data-od-app-mounted="1"` on first paint of the real UI), so the user never
-// sees the web's own "Loading Open Design…" shell flash between the splash and
+// sees the web's own "Loading viaim Design…" shell flash between the splash and
 // the app. Poll cadence + a hard ceiling so a missing mount signal can never
 // strand the user on the splash forever.
 const WEB_MOUNT_POLL_MS = 80;
@@ -830,10 +830,9 @@ const MAC_WINDOW_CHROME_CSS = `
   }
 `;
 
-// Light-background startup splash shown while the web runtime boots. It plays
-// the brand intro clip once and then holds on its final settled logo frame until
-// the main window is ready. The clip is embedded as a base64 data URL so it
-// renders identically in dev and in packaged builds (see `splash-video.ts`).
+// Light-background startup splash shown while the web runtime boots. The mark
+// is embedded as SVG so dev and packaged builds render the same viaim Design
+// identity before the daemon or web sidecars are available.
 function createPendingHtml(): string {
   const start = splashStagePayload("starting");
   const initialPct = Math.max(0, Math.min(100, Math.round((start.step / start.total) * 100)));
@@ -841,7 +840,11 @@ function createPendingHtml(): string {
 <html>
   <head>
     <meta charset="utf-8" />
+<<<<<<< HEAD
     <title>viaim Design</title>
+=======
+    <title>${DEFAULT_APP_NAME}</title>
+>>>>>>> main
     <style>
       html,
       body {
@@ -855,12 +858,25 @@ function createPendingHtml(): string {
         display: flex;
         justify-content: center;
       }
-      video {
-        background: #f2f4f5;
-        height: auto;
-        max-height: 100%;
-        max-width: 100%;
-        width: auto;
+      .boot-brand {
+        align-items: center;
+        animation: boot-brand-enter 420ms cubic-bezier(0.23, 1, 0.32, 1) both;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        user-select: none;
+      }
+      .boot-brand svg {
+        display: block;
+        height: 176px;
+        width: 176px;
+      }
+      .boot-brand-name {
+        color: #111;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 26px;
+        font-weight: 650;
+        letter-spacing: -0.025em;
       }
       .boot-stage {
         bottom: 56px;
@@ -911,17 +927,24 @@ function createPendingHtml(): string {
         0%, 60%, 100% { opacity: 0.25; }
         30% { opacity: 1; }
       }
+      @keyframes boot-brand-enter {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-brand { animation: none; }
+      }
     </style>
   </head>
   <body>
-    <video
-      id="splash"
-      autoplay
-      muted
-      playsinline
-      disablepictureinpicture
-      src="${SPLASH_VIDEO_DATA_URL}"
-    ></video>
+    <div class="boot-brand" role="img" aria-label="${DEFAULT_APP_NAME}">
+      <svg viewBox="0 0 900 900" aria-hidden="true">
+        <rect width="900" height="900" fill="#000" />
+        <path d="M171 329H458L314.5 570L171 329Z" fill="#fff" />
+        <path d="M486 329H605.5A120.5 120.5 0 0 1 605.5 570H486V329Z" fill="#fff" />
+      </svg>
+      <span class="boot-brand-name">${DEFAULT_APP_NAME}</span>
+    </div>
     <div class="boot-progress" aria-hidden="true">
       <div class="boot-progress-fill" id="boot-progress-fill" data-pct="${initialPct}" style="width: ${initialPct}%;"></div>
     </div>
@@ -929,17 +952,6 @@ function createPendingHtml(): string {
       <span class="boot-stage-step" id="boot-stage-step">${start.step}/${start.total}</span><span id="boot-stage-text">${start.label}</span><span class="boot-dots" aria-hidden="true"><span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></span>
     </div>
     <script>
-      (function () {
-        var video = document.getElementById("splash");
-        if (!video) return;
-        var play = function () {
-          var attempt = video.play();
-          if (attempt && typeof attempt.catch === "function") attempt.catch(function () {});
-        };
-        video.addEventListener("loadedmetadata", function () { video.currentTime = 0; });
-        video.addEventListener("loadeddata", play);
-        play();
-      })();
       // Accepts the structured { step, total, label } payload (and tolerates a
       // bare label string for back-compat). The step counter + progress bar give
       // a slow cold boot a sense of how far along it is; the bar only ever grows
@@ -1019,7 +1031,11 @@ const SPLASH_STAGE_SEQUENCE: readonly SplashBootStage[] = [
 ];
 
 const SPLASH_STAGE_LABELS: Record<SplashBootStage, string> = {
+<<<<<<< HEAD
   starting: "Starting viaim Design",
+=======
+  starting: `Starting ${DEFAULT_APP_NAME}`,
+>>>>>>> main
   engine: "Starting the local engine",
   engineReady: "Local engine ready",
   interface: "Preparing the interface",
@@ -1139,7 +1155,11 @@ export function createSplashWindow(): SplashWindowHandle {
     height: 900,
     resizable: false,
     show: true,
+<<<<<<< HEAD
     title: "viaim Design",
+=======
+    title: DEFAULT_APP_NAME,
+>>>>>>> main
     width: 1280,
     webPreferences: {
       contextIsolation: true,
@@ -1808,7 +1828,11 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
 
   const consoleEntries: DesktopConsoleEntry[] = [];
   const petWindow = createDesktopPetWindow(preloadPath, options.osLocale);
+<<<<<<< HEAD
   const windowTitle = options.windowTitle ?? "viaim Design";
+=======
+  const windowTitle = options.windowTitle ?? DEFAULT_APP_NAME;
+>>>>>>> main
   const window = new BrowserWindow({
     height: 900,
     icon: resolveDesktopIconPath(),
@@ -1821,7 +1845,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
     // Starts hidden: the splash window is what the user sees while the real web
     // app loads in here. We reveal this window only once the app has actually
     // mounted (see `revealWhenReady` below), so there is never a flash of the
-    // web's own "Loading Open Design…" shell.
+    // web's own "Loading viaim Design…" shell.
     show: false,
     title: windowTitle,
     autoHideMenuBar: true,
@@ -1943,7 +1967,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
   const unsubscribeUpdater = options.updater?.subscribe(() => sendUpdaterStatus()) ?? (() => undefined);
   const requireMainWindowSender = (event: Electron.IpcMainInvokeEvent): void => {
     if (event.sender !== window.webContents) {
-      throw new Error("host IPC is only available to the main Open Design window");
+      throw new Error("host IPC is only available to the main viaim Design window");
     }
   };
   window.webContents.on("will-attach-webview", (event, webPreferences, params) => {
@@ -2230,7 +2254,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
 
   // Hold the splash until BOTH (a) the web bundle reports it has mounted — it
   // sets `data-od-app-mounted="1"` on first paint of the real UI — so we never
-  // reveal the web's own dark "Loading Open Design…" shell, and (b) the splash
+  // reveal the web's own dark "Loading viaim Design…" shell, and (b) the splash
   // has been up at least MIN_SPLASH_MS so the brand clip plays through. A hard
   // ceiling guarantees the user is never stranded on the splash if the mount
   // signal never arrives.

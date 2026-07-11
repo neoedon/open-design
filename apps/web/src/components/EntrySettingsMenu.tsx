@@ -107,7 +107,7 @@ export function EntrySettingsMenu({
   }, [open]);
 
   // surface_view — fire once each time the settings popover opens so the
-  // share / language / appearance funnels have a denominator.
+  // language / appearance funnels have a denominator.
   useEffect(() => {
     if (!open) return;
     trackSettingsPopoverSurfaceView(analytics.track, {

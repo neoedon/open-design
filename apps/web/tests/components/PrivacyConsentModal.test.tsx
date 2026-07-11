@@ -50,7 +50,11 @@ describe('PrivacyConsentModal', () => {
     expect(footer.textContent ?? '').toMatch(/Privacy/);
   });
 
+<<<<<<< HEAD
   it('does not expose the removed Open Design privacy-policy link', () => {
+=======
+  it('does not route users to the upstream Open Design privacy page', () => {
+>>>>>>> main
     renderModal();
     expect(screen.queryByRole('link')).toBeNull();
   });

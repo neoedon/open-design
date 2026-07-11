@@ -4195,7 +4195,7 @@ function fallbackPluginPresetPrompt(
 const HOME_PROMPT_EXAMPLES: Record<Locale, Record<string, string[]>> = {
   "en": {
     "web-clone": [
-      "Website URL to clone: https://open-design.ai",
+      "Website URL to clone: https://example.com",
       "Website URL to clone: https://kimi.com",
     ],
     prototype: [
@@ -4331,7 +4331,7 @@ const HOME_PROMPT_EXAMPLES: Record<Locale, Record<string, string[]>> = {
   },
   "zh-CN": {
     "web-clone": [
-      "想要复刻的网站链接：https://open-design.ai",
+      "想要复刻的网站链接：https://example.com",
       "想要复刻的网站链接：https://kimi.com",
     ],
     prototype: [

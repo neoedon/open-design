@@ -26,7 +26,11 @@ function setNavigatorLanguages(languages: readonly string[]): void {
   });
 }
 
+<<<<<<< HEAD
 describe('detectInitialLocale viaim defaults', () => {
+=======
+describe('detectInitialLocale defaults', () => {
+>>>>>>> main
   beforeEach(() => {
     window.localStorage.clear();
     setNavigatorLanguages(['en-US']);
@@ -36,28 +40,46 @@ describe('detectInitialLocale viaim defaults', () => {
     window.localStorage.clear();
   });
 
+<<<<<<< HEAD
   it('preserves a manually-tagged localStorage pick', () => {
+=======
+  it('preserves a manually selected language', () => {
+>>>>>>> main
     setStoredLocale('ja', 'manual');
     setNavigatorLanguages(['fr-FR']);
 
     expect(detectInitialLocale()).toBe('ja');
   });
 
+<<<<<<< HEAD
   it('ignores an untagged legacy value and uses Simplified Chinese', () => {
+=======
+  it('ignores an untagged legacy value and defaults to Simplified Chinese', () => {
+>>>>>>> main
     setStoredLocale('ja', 'untagged');
 
     expect(detectInitialLocale()).toBe('zh-CN');
   });
 
+<<<<<<< HEAD
   it('uses Simplified Chinese when a manual value is unsupported', () => {
+=======
+  it('defaults to Simplified Chinese when a manual value is unsupported', () => {
+>>>>>>> main
     setStoredLocale('xx-YY', 'manual');
     setNavigatorLanguages(['de-DE']);
 
     expect(detectInitialLocale()).toBe('zh-CN');
   });
 
+<<<<<<< HEAD
   it('defaults to Simplified Chinese regardless of browser language', () => {
     setNavigatorLanguages(['ko-KR']);
+=======
+  it('does not let the browser language override the product default', () => {
+    setNavigatorLanguages(['ko-KR', 'fr-FR']);
+
+>>>>>>> main
     expect(detectInitialLocale()).toBe('zh-CN');
   });
 });

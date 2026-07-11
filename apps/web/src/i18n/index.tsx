@@ -89,9 +89,18 @@ export function resolveSystemLocale(languages: readonly string[]): Locale | null
   return null;
 }
 
+<<<<<<< HEAD
 // viaim Design starts in Simplified Chinese. A deliberate user selection
 // remains authoritative across subsequent launches; legacy or auto-detected
 // values without the manual marker do not override the product default.
+=======
+// First-run defaults to Simplified Chinese. A deliberate saved language
+// choice still wins, so existing users keep their explicit preference.
+// Untagged legacy values are ignored because they may have come from the
+// former OS/browser auto-detection path.
+// Exported so tests can pin the priority chain without spinning up the
+// full I18nProvider.
+>>>>>>> main
 export function detectInitialLocale(): Locale {
   if (typeof window === 'undefined') return 'zh-CN';
   let storedLocale: string | null = null;
@@ -177,9 +186,9 @@ export function I18nProvider({ initial, children }: ProviderProps) {
 export function useI18n(): I18nContextValue {
   const ctx = useContext(I18nContext);
   if (!ctx) {
-    // Fall back to a stand-alone English translator when no provider is
-    // mounted (e.g. an isolated test). This keeps the API safe to call
-    // without requiring every callsite to wrap in a provider.
+    // Keep the stand-alone fallback stable for isolated component tests and
+    // embeds that intentionally mount without an app-level provider. Normal
+    // product startup always goes through I18nProvider and detectInitialLocale.
     return {
       locale: 'en',
       setLocale: () => { },

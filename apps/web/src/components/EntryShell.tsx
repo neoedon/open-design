@@ -210,7 +210,11 @@ type OnboardingAgentTestState =
   | { status: 'running'; inputKey: string }
   | { status: 'done'; inputKey: string; result: ConnectionTestResponse };
 
+<<<<<<< HEAD
 // The topbar chips (model switcher, Use everywhere)
+=======
+// The topbar chips (model switcher and Use everywhere)
+>>>>>>> main
 // collapse into the settings dropdown when the viewport gets
 // narrow. The transition is driven entirely by CSS @media queries
 // in `entry-layout.css` so server and client render identical
@@ -261,7 +265,7 @@ type EntryCreateProjectInput = Omit<CreateInput, 'metadata'> & {
   initialRunContext?: RunContextSelection | null;
   conversationMode?: ChatSessionMode;
   autoSendFirstMessage?: boolean;
-  /** The home submit already ran the Open Design Cloud balance gate; the
+  /** The home submit already ran the viaim Design Cloud balance gate; the
    *  project's first auto-send must not re-gate. */
   amrGatePrechecked?: boolean;
   requestId?: string;
@@ -709,7 +713,7 @@ export function EntryShell({
   // projectKind='other', so the agent asks for the exact task type
   // before continuing.
   async function handlePluginLoopSubmit(payload: PluginLoopSubmit) {
-    // Open Design Cloud pre-run balance gate: hard blocks (empty wallet or
+    // viaim Design Cloud pre-run balance gate: hard blocks (empty wallet or
     // signed out) and the soft low-balance reminder both fire BEFORE the
     // project is created, so the dialog appears right here on the home page
     // and the composer keeps its draft. In-project sends are gated separately
@@ -2021,7 +2025,7 @@ function OnboardingView({
   }
 
   // Cloud-landing primary CTA: pick the AMR cloud runtime and kick off the
-  // Open Design Cloud sign-in in one gesture. Mirrors the old AMR card's
+  // viaim Design Cloud sign-in in one gesture. Mirrors the old AMR card's
   // selection side effects (mode/agent) followed by the sign-in path, so a
   // successful login advances to the next onboarding step exactly the same way.
   async function handleCloudSignIn() {
@@ -2499,7 +2503,7 @@ function OnboardingView({
       ? t('settings.onboardingFinish')
       : t('settings.onboardingContinue');
 
-  // Connect step, default face: a minimal, centered Open Design Cloud sign-in
+  // Connect step, default face: a minimal, centered viaim Design Cloud sign-in
   // landing. No stepper, no runtime cards — just the cloud CTA, a secondary
   // link into the full runtime chooser, and a top-left language/theme bar.
   if (step === 0 && connectExpanded === null) {
@@ -2534,7 +2538,11 @@ function OnboardingView({
           <span
             className="onboarding-cloud__logo"
             role="img"
+<<<<<<< HEAD
             aria-label="viaim Design"
+=======
+            aria-label={t('app.brand')}
+>>>>>>> main
           />
           <h1 className="onboarding-cloud__title">{t('settings.onboardingCloudTitle')}</h1>
           <p className="onboarding-cloud__body">{t('settings.onboardingCloudBody')}</p>
@@ -2628,7 +2636,11 @@ function OnboardingView({
           )}
         </div>
         <footer className="onboarding-cloud__footer">
+<<<<<<< HEAD
           © {new Date().getFullYear()} viaim Design · {t('settings.onboardingCloudRights')}
+=======
+          © {new Date().getFullYear()} {t('app.brand')} · {t('settings.onboardingCloudRights')}
+>>>>>>> main
         </footer>
       </section>
     );

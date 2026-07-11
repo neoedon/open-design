@@ -168,8 +168,8 @@ function ActionNoticeView({ notice }: { notice: ActionNotice | null }) {
 
 // Useful-info tips that rotate one at a time in the panel footer, ordered as
 // a loose journey: file basics → feeding context → generating → iterating →
-// exporting/sharing → community. A tip with a `url` renders its typed line as
-// a link to that destination.
+// exporting/sharing. A tip with a `url` renders its typed line as a link to
+// that destination.
 const USEFUL_TIPS: ReadonlyArray<{ key: keyof Dict; url?: string }> = [
   { key: 'designFiles.usefulInfoTip' },
   { key: 'designFiles.usefulInfoTip2' },
@@ -1241,7 +1241,7 @@ export function DesignFilesPanel({
                               void handlePluginFolderAgentAction(folder.path, 'contribute')
                             }
                           >
-                            {sharingFolder === `contribute:${folder.path}` ? 'Sending…' : 'Open Design PR'}
+                            {sharingFolder === `contribute:${folder.path}` ? 'Sending…' : 'viaim Design PR'}
                           </button>
                         </div>
                       ) : null}
