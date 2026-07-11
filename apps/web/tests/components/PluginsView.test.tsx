@@ -195,6 +195,14 @@ afterEach(() => {
 });
 
 describe('PluginsView', () => {
+  it('does not expose the removed Team placeholder tab', () => {
+    render(<PluginsView />);
+
+    expect(screen.queryByTestId('plugins-tab-team')).toBeNull();
+    expect(screen.queryByRole('tab', { name: 'Team' })).toBeNull();
+    expect(screen.queryByText('Private team marketplaces')).toBeNull();
+  });
+
   it('starts guided plugin creation from the Plugins hero', async () => {
     const onCreatePlugin = vi.fn();
     render(<PluginsView onCreatePlugin={onCreatePlugin} />);

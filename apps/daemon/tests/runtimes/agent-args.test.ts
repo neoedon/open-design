@@ -777,7 +777,13 @@ test('codex buildArgs clamps reasoning effort per model', () => {
     ['gpt-5.5', 'low', 'low'],
     ['gpt-5.5', 'medium', 'medium'],
     ['gpt-5.5', 'high', 'high'],
+    // Codex "ultra" is serialized as API-level "max". GPT-5.5 does not
+    // support either value, so an inherited GPT-5.6 config must be capped.
+    ['gpt-5.5', 'max', 'xhigh'],
+    ['gpt-5.5', 'ultra', 'xhigh'],
     ['vendor/gpt-5.5-foo', 'minimal', 'low'], // path-style id
+    ['vendor/gpt-5.5-foo', 'ultra', 'xhigh'],
+    ['gpt-5.50', 'ultra', 'ultra'], // preserve future families
     // gpt-5.1: xhigh isn't supported, others pass through.
     ['gpt-5.1', 'xhigh', 'high'],
     ['gpt-5.1', 'high', 'high'],
@@ -787,6 +793,10 @@ test('codex buildArgs clamps reasoning effort per model', () => {
     ['gpt-5.1-codex-mini', 'medium', 'medium'],
     ['gpt-5.1-codex-mini', 'high', 'high'],
     ['gpt-5.1-codex-mini', 'xhigh', 'high'],
+    ['gpt-5.1-codex-mini', 'max', 'high'],
+    // GPT-5.6 supports max/ultra; preserve those values verbatim.
+    ['gpt-5.6-sol', 'max', 'max'],
+    ['gpt-5.6-sol', 'ultra', 'ultra'],
     // Unknown / future families: pass through; let the API surface its error
     // as the signal a new rule belongs in clampCodexReasoning.
     ['gpt-6', 'minimal', 'minimal'],

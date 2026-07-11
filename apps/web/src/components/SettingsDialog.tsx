@@ -230,8 +230,6 @@ interface ByokProviderPreset {
 // sign-in coachmark when the user has not authorized AMR yet).
 export type SettingsHighlight = 'amr' | null;
 
-const OPEN_DESIGN_RELEASES_URL = 'https://github.com/nexu-io/open-design/releases';
-
 type AboutUpdatePrimaryAction = 'check' | 'download' | 'install' | 'quit';
 type AboutUpdateTone = 'neutral' | 'success' | 'warning' | 'error';
 
@@ -1363,7 +1361,7 @@ export function SettingsDialog({
   >(() => new Set());
   const previousInitialRef = useRef(initial);
   const lastSavedAppearanceRef = useRef({
-    theme: initial.theme ?? 'system',
+    theme: initial.theme ?? 'light',
     accentColor: resolveAccentColor(initial.accentColor),
   });
 
@@ -1379,7 +1377,7 @@ export function SettingsDialog({
 
   useEffect(() => {
     lastSavedAppearanceRef.current = {
-      theme: initial.theme ?? 'system',
+      theme: initial.theme ?? 'light',
       accentColor: resolveAccentColor(initial.accentColor),
     };
   }, [initial.theme, initial.accentColor]);
@@ -1750,10 +1748,6 @@ export function SettingsDialog({
     applyAboutUpdaterResult,
     t,
   ]);
-
-  const handleOpenReleaseNotes = useCallback(() => {
-    void openExternalUrl(OPEN_DESIGN_RELEASES_URL);
-  }, []);
 
   // Precise inverse of App.handleCompleteOnboarding: flip
   // onboardingCompleted back to false, mirror it to localStorage and the
@@ -3093,7 +3087,7 @@ export function SettingsDialog({
           await onPersist(snapshot, persistOptions);
           autosaveLastSavedRef.current = snapshot;
           lastSavedAppearanceRef.current = {
-            theme: snapshot.theme ?? 'system',
+            theme: snapshot.theme ?? 'light',
             accentColor: resolveAccentColor(snapshot.accentColor),
           };
           // If a newer edit landed while the request was in flight,
@@ -5607,15 +5601,6 @@ export function SettingsDialog({
                             : t(aboutUpdateControl.primaryLabelKey)}
                         </button>
                       ) : null}
-                      {aboutUpdateControl.showReleaseLink ? (
-                        <button
-                          type="button"
-                          className="settings-about-release-link"
-                          onClick={handleOpenReleaseNotes}
-                        >
-                          {t('settings.updateViewReleases')}
-                        </button>
-                      ) : null}
                     </div>
                   </div>
                   <div>
@@ -5647,12 +5632,13 @@ export function SettingsDialog({
                   <input
                     checked={cfg.allowSilentUpdates === true}
                     type="checkbox"
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const checked = event.currentTarget.checked;
                       setCfg((current) => ({
                         ...current,
-                        allowSilentUpdates: event.currentTarget.checked,
-                      }))
-                    }
+                        allowSilentUpdates: checked,
+                      }));
+                    }}
                   />
                   <span className="settings-about-toggle-copy">
                     <span>{t('settings.allowSilentUpdates')}</span>
@@ -8110,7 +8096,7 @@ function AppearanceSection({
 }) {
   const { t } = useI18n();
   const analytics = useAnalytics();
-  const current = cfg.theme ?? 'system';
+  const current = cfg.theme ?? 'light';
   const currentAccent = normalizeAccentColor(cfg.accentColor) ?? DEFAULT_ACCENT_COLOR;
   const accentLabel = t('pet.fieldAccent');
   const defaultAccentLabel = t('pet.fieldAccentDefault');

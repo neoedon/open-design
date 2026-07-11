@@ -593,6 +593,37 @@ process.stdin.on('end', () => {
     expect(after).toContain('model = "gpt-5.5"');
   });
 
+  it('caps inherited Codex ultra for the GPT-5.5 image orchestrator', async () => {
+    const generatedHome = path.join(root, 'reasoning-codex-home');
+    await writeCodexAuth(generatedHome, {
+      auth_mode: 'chatgpt',
+      OPENAI_API_KEY: null,
+    });
+    await writeFile(
+      path.join(generatedHome, 'config.toml'),
+      'model = "gpt-5.6-sol"\nmodel_reasoning_effort = "ultra"\n',
+      'utf8',
+    );
+    await installFakeCodex(generatedHome, 'reasoning-codex-thread', {
+      expectedArgsIncludes: 'model_reasoning_effort="xhigh"',
+    });
+
+    const result = await generateMedia({
+      projectRoot,
+      projectsRoot,
+      projectId: 'project-1',
+      surface: 'image',
+      model: 'gpt-image-2',
+      prompt: 'A compact green app icon with a folded page motif',
+      output: 'subscription-reasoning.png',
+    });
+
+    expect(result.providerId).toBe('codex');
+    await expect(
+      readFile(path.join(generatedHome, 'config.toml'), 'utf8'),
+    ).resolves.toContain('model_reasoning_effort = "ultra"');
+  });
+
   it('does not reroute OpenAI image models without a Codex twin', async () => {
     const generatedHome = path.join(root, 'dalle-subscription-codex-home');
     await writeCodexAuth(generatedHome, {

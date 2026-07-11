@@ -157,6 +157,21 @@ describe('i18n locales', () => {
     }
   });
 
+  it('keeps Vision Design navigation copy translated in Chinese', () => {
+    const translatedKeys: Array<keyof Dict> = [
+      'entry.navBrandAssets',
+      'entry.navImageSlicer',
+      'entry.navDesignProjects',
+      'entry.navDesignProjectSync',
+      'entry.navFigmaDashboard',
+    ];
+
+    for (const key of translatedKeys) {
+      expect(zhCN[key], `zh-CN.${key}`).not.toBe(en[key]);
+      expect(zhTW[key], `zh-TW.${key}`).not.toBe(en[key]);
+    }
+  });
+
   it('keeps Routines settings page copy translated in Chinese (issue #1372)', () => {
     const translatedKeys: Array<keyof Dict> = [
       'routines.title',

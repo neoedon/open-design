@@ -13,19 +13,35 @@ export function clampCodexReasoning(
   if (!effort) return effort;
   const raw = String(modelId ?? '').trim();
   const id = raw.includes('/') ? raw.split('/').pop() : raw;
+  let compatibleEffort = effort;
+  const isGpt52To55Family =
+    typeof id === 'string' && /^gpt-5\.(?:2|3|4|5)(?:$|[-:@])/.test(id);
   const isGpt5LateFamily =
     !id ||
     id === 'default' ||
-    id.startsWith('gpt-5.2') ||
-    id.startsWith('gpt-5.3') ||
-    id.startsWith('gpt-5.4') ||
-    id.startsWith('gpt-5.5');
-  if (isGpt5LateFamily && effort === 'minimal') return 'low';
-  if (id === 'gpt-5.1' && effort === 'xhigh') return 'high';
-  if (id === 'gpt-5.1-codex-mini') {
-    return effort === 'high' || effort === 'xhigh' ? 'high' : 'medium';
+    isGpt52To55Family;
+  // Codex Desktop's "ultra" preset is serialized as API-level "max".
+  // GPT-5.6 supports it, but older GPT-5 families cap at xhigh (or lower).
+  if (
+    isGpt52To55Family &&
+    (compatibleEffort === 'max' || compatibleEffort === 'ultra')
+  ) {
+    compatibleEffort = 'xhigh';
   }
-  return effort;
+  if (
+    (id === 'gpt-5.1' || id === 'gpt-5.1-codex-mini') &&
+    (compatibleEffort === 'max' || compatibleEffort === 'ultra')
+  ) {
+    compatibleEffort = 'xhigh';
+  }
+  if (isGpt5LateFamily && compatibleEffort === 'minimal') return 'low';
+  if (id === 'gpt-5.1' && compatibleEffort === 'xhigh') return 'high';
+  if (id === 'gpt-5.1-codex-mini') {
+    return compatibleEffort === 'high' || compatibleEffort === 'xhigh'
+      ? 'high'
+      : 'medium';
+  }
+  return compatibleEffort;
 }
 
 // Parse one-id-per-line stdout from `<cli> models` and prepend the synthetic

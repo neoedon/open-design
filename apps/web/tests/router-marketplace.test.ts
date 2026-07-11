@@ -62,6 +62,14 @@ describe('router entry sub-views', () => {
     expect(parseRoute('/automations')).toEqual({ kind: 'home', view: 'tasks' });
   });
 
+  it('parses the Vision Design entry routes', () => {
+    expect(parseRoute('/brand-assets')).toEqual({ kind: 'home', view: 'brand-assets' });
+    expect(parseRoute('/image-slicer')).toEqual({ kind: 'home', view: 'image-slicer' });
+    expect(parseRoute('/design-projects')).toEqual({ kind: 'home', view: 'design-projects' });
+    expect(parseRoute('/design-project-sync')).toEqual({ kind: 'home', view: 'design-project-sync' });
+    expect(parseRoute('/figma-dashboard')).toEqual({ kind: 'home', view: 'figma-dashboard' });
+  });
+
   it('keeps /tasks as an alias for older links', () => {
     expect(parseRoute('/tasks')).toEqual({ kind: 'home', view: 'tasks' });
   });
@@ -88,6 +96,11 @@ describe('router entry sub-views', () => {
       { kind: 'home', view: 'tasks' } as Route,
       { kind: 'home', view: 'plugins' } as Route,
       { kind: 'home', view: 'design-systems' } as Route,
+      { kind: 'home', view: 'brand-assets' } as Route,
+      { kind: 'home', view: 'image-slicer' } as Route,
+      { kind: 'home', view: 'design-projects' } as Route,
+      { kind: 'home', view: 'design-project-sync' } as Route,
+      { kind: 'home', view: 'figma-dashboard' } as Route,
       { kind: 'home', view: 'integrations' } as Route,
     ]) {
       expect(parseRoute(buildPath(route))).toEqual(route);

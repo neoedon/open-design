@@ -157,6 +157,35 @@ export async function readCodexProviderEnvKey(
 }
 
 /**
+ * Read the root-table reasoning effort from a Codex config string.
+ *
+ * Profile-scoped values are deliberately ignored: Open Design does not pass a
+ * `--profile` flag, so only the root value is inherited by the child CLI.
+ */
+export function extractCodexModelReasoningEffort(toml: string): string | null {
+  const lines = String(toml || '').split(/\r?\n/);
+  for (const raw of lines) {
+    const line = stripTomlComment(raw).trim();
+    if (line.startsWith('[')) break;
+    const value = matchQuotedValue(line, 'model_reasoning_effort');
+    if (value) return value;
+  }
+  return null;
+}
+
+/** Read the inherited root reasoning effort from the active Codex home. */
+export async function readCodexModelReasoningEffort(
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<string | null> {
+  try {
+    const toml = await readFile(resolveCodexConfigPath(env), 'utf8');
+    return extractCodexModelReasoningEffort(toml);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * The only `service_tier` values the Codex CLI accepts. Anything else makes
  * the CLI exit on config load, so the normalizer removes it.
  */

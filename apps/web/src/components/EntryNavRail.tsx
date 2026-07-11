@@ -2,14 +2,12 @@
 //
 // Renders a narrow icon-only column. The first slot is the brand logo,
 // followed by the primary destinations users expect to keep in reach:
-// New project, home, projects, brand kit, automations, plugins,
-// and integrations. Footer controls are reserved for lower-frequency
-// support affordances such as the help launcher.
+// New project, home, projects, design systems, Vision Design utilities,
+// automations, plugins, and integrations.
 // Language switching and other account-scoped controls live behind the
 // floating settings cog in the top-right corner of the main content.
 
 import { useEffect, useRef, type ReactNode } from 'react';
-import { EntryHelpMenu } from './EntryHelpMenu';
 import { Icon } from './Icon';
 import { useT } from '../i18n';
 import { LIBRARY_UI_VISIBLE } from '../features/libraryUi';
@@ -21,6 +19,11 @@ export type EntryView =
   | 'tasks'
   | 'plugins'
   | 'design-systems'
+  | 'brand-assets'
+  | 'image-slicer'
+  | 'design-projects'
+  | 'design-project-sync'
+  | 'figma-dashboard'
   | 'library'
   | 'brands'
   | 'integrations';
@@ -55,6 +58,7 @@ function NavButton({ active, ariaLabel, tooltip, onClick, disabled, testId, chil
       disabled={disabled}
       aria-label={ariaLabel}
       aria-current={active ? 'page' : undefined}
+      title={tooltip}
       data-tooltip={tooltip}
       {...(testId ? { 'data-testid': testId } : {})}
     >
@@ -170,6 +174,51 @@ export function EntryNavRail({
         >
           <Icon name="palette" size={18} />
         </NavButton>
+        <NavButton
+          active={view === 'brand-assets'}
+          ariaLabel={t('entry.navBrandAssets')}
+          tooltip={t('entry.navBrandAssets')}
+          onClick={() => selectView('brand-assets')}
+          testId="entry-nav-brand-assets"
+        >
+          <Icon name="swatchbook" size={18} />
+        </NavButton>
+        <NavButton
+          active={view === 'image-slicer'}
+          ariaLabel={t('entry.navImageSlicer')}
+          tooltip={t('entry.navImageSlicer')}
+          onClick={() => selectView('image-slicer')}
+          testId="entry-nav-image-slicer"
+        >
+          <Icon name="image" size={18} />
+        </NavButton>
+        <NavButton
+          active={view === 'design-projects'}
+          ariaLabel={t('entry.navDesignProjects')}
+          tooltip={t('entry.navDesignProjects')}
+          onClick={() => selectView('design-projects')}
+          testId="entry-nav-design-projects"
+        >
+          <Icon name="layout" size={18} />
+        </NavButton>
+        <NavButton
+          active={view === 'design-project-sync'}
+          ariaLabel={t('entry.navDesignProjectSync')}
+          tooltip={t('entry.navDesignProjectSync')}
+          onClick={() => selectView('design-project-sync')}
+          testId="entry-nav-design-project-sync"
+        >
+          <Icon name="refresh" size={18} />
+        </NavButton>
+        <NavButton
+          active={view === 'figma-dashboard'}
+          ariaLabel={t('entry.navFigmaDashboard')}
+          tooltip={t('entry.navFigmaDashboard')}
+          onClick={() => selectView('figma-dashboard')}
+          testId="entry-nav-figma-dashboard"
+        >
+          <Icon name="blocks" size={18} />
+        </NavButton>
         {LIBRARY_UI_VISIBLE ? (
           <NavButton
             active={view === 'library'}
@@ -208,10 +257,6 @@ export function EntryNavRail({
         >
           <Icon name="link" size={18} />
         </NavButton>
-      </div>
-      <div className="entry-nav-rail__footer">
-        <div className="entry-nav-rail__divider" role="separator" />
-        <EntryHelpMenu />
       </div>
     </nav>
   );

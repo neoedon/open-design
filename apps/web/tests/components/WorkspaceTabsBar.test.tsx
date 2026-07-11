@@ -28,6 +28,11 @@ vi.mock('../../src/i18n', () => ({
       'entry.navTasks': 'Automations',
       'entry.navPlugins': 'Plugins',
       'entry.navIntegrations': 'Integrations',
+      'entry.navBrandAssets': 'Brand assets',
+      'entry.navImageSlicer': 'Image slicer',
+      'entry.navDesignProjects': 'Design projects',
+      'entry.navDesignProjectSync': 'Project sync',
+      'entry.navFigmaDashboard': 'Figma dashboard',
       'settings.welcomeTitle': 'Welcome',
     };
     return labels[key] ?? key;
@@ -268,10 +273,28 @@ describe('WorkspaceTabsBar navigation semantics', () => {
     );
     expect(screen.getAllByRole('tab')).toHaveLength(1);
 
-    const sections: Array<{ view: 'projects' | 'tasks' | 'design-systems' | 'plugins' | 'integrations'; label: string }> = [
+    const sections: Array<{
+      view:
+        | 'projects'
+        | 'tasks'
+        | 'design-systems'
+        | 'brand-assets'
+        | 'image-slicer'
+        | 'design-projects'
+        | 'design-project-sync'
+        | 'figma-dashboard'
+        | 'plugins'
+        | 'integrations';
+      label: string;
+    }> = [
       { view: 'projects', label: 'Projects' },
       { view: 'tasks', label: 'Automations' },
       { view: 'design-systems', label: 'Design systems' },
+      { view: 'brand-assets', label: 'Brand assets' },
+      { view: 'image-slicer', label: 'Image slicer' },
+      { view: 'design-projects', label: 'Design projects' },
+      { view: 'design-project-sync', label: 'Project sync' },
+      { view: 'figma-dashboard', label: 'Figma dashboard' },
       { view: 'plugins', label: 'Plugins' },
       { view: 'integrations', label: 'Integrations' },
     ];
@@ -288,6 +311,44 @@ describe('WorkspaceTabsBar navigation semantics', () => {
 
     // The single entry tab in a non-home view is still permanent (no close btn).
     expect(screen.queryByRole('button', { name: 'Close tab' })).toBeNull();
+  });
+
+  it.each([
+    ['brand-assets', 'Brand assets'],
+    ['image-slicer', 'Image slicer'],
+    ['design-projects', 'Design projects'],
+    ['design-project-sync', 'Project sync'],
+    ['figma-dashboard', 'Figma dashboard'],
+  ] as const)('revives a persisted %s entry tab', async (view, label) => {
+    window.localStorage.setItem('open-design:workspace-tabs:v1', JSON.stringify({
+      tabs: [
+        {
+          id: `entry:${view}:saved`,
+          kind: 'entry',
+          view,
+          createdAt: 1,
+          lastActiveAt: 1,
+        },
+        {
+          id: 'project:project-alpha:saved',
+          kind: 'project',
+          projectId: project.id,
+          conversationId: null,
+          fileName: null,
+          createdAt: 2,
+          lastActiveAt: 2,
+        },
+      ],
+      activeTabId: 'project:project-alpha:saved',
+    }));
+
+    render(<WorkspaceTabsBar route={projectRoute} projects={[project]} />);
+
+    await waitFor(() => {
+      const labels = screen.getAllByRole('tab').map((tab) => tab.textContent ?? '');
+      expect(labels.some((value) => value.includes(label))).toBe(true);
+      expect(labels.some((value) => value.includes(project.name))).toBe(true);
+    });
   });
 
   it('keeps the entry tab when opening a project from a non-home entry view', async () => {

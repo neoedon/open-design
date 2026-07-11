@@ -1,12 +1,16 @@
 // Minimal ZIP encoder, stored mode (no compression). Big enough for the
-// "Download as ZIP" button — we only ever pack a handful of UTF-8 text files
-// (HTML/CSS/JS/Markdown) totalling well under a few MB, so skipping deflate
-// keeps the implementation small and dependency-free.
+// "Download as ZIP" button. Entries may be UTF-8 text or already-encoded
+// binary bytes; skipping deflate keeps the implementation small and
+// dependency-free.
+
+export type ZipEntryContent = string | Uint8Array | ArrayBuffer;
 
 export interface ZipEntry {
   path: string;
-  content: string;
+  content: ZipEntryContent;
 }
+
+const MAX_CLASSIC_ZIP_ENTRIES = 0xffff;
 
 const CRC_TABLE: number[] = (() => {
   const t: number[] = new Array(256);
@@ -40,7 +44,18 @@ function dosTime(d: Date): { time: number; date: number } {
   return { time, date };
 }
 
+function entryBytes(content: ZipEntryContent, encoder: TextEncoder): Uint8Array {
+  if (typeof content === 'string') return encoder.encode(content);
+  if (content instanceof Uint8Array) {
+    return new Uint8Array(content.buffer, content.byteOffset, content.byteLength);
+  }
+  return new Uint8Array(content);
+}
+
 export function buildZip(entries: ZipEntry[]): Blob {
+  if (entries.length > MAX_CLASSIC_ZIP_ENTRIES) {
+    throw new Error(`ZIP archives support at most ${MAX_CLASSIC_ZIP_ENTRIES} entries.`);
+  }
   const enc = new TextEncoder();
   const now = dosTime(new Date());
 
@@ -51,7 +66,10 @@ export function buildZip(entries: ZipEntry[]): Blob {
 
   for (const entry of entries) {
     const nameBytes = enc.encode(entry.path);
-    const dataBytes = enc.encode(entry.content);
+    if (nameBytes.length > 0xffff) {
+      throw new Error('ZIP entry paths must be at most 65,535 bytes.');
+    }
+    const dataBytes = entryBytes(entry.content, enc);
     const crc = crc32(dataBytes);
     const size = dataBytes.length;
     // General-purpose bit 11 (0x0800) signals UTF-8 filenames so readers

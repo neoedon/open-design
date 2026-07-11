@@ -23,6 +23,11 @@ export interface HomeNavClickProps {
     | 'automations'
     | 'plugins'
     | 'design_systems'
+    | 'brand_assets'
+    | 'image_slicer'
+    | 'design_projects'
+    | 'design_project_sync'
+    | 'figma_dashboard'
     | 'integrations'
     | 'new_project_plus'
     | 'help';
@@ -1606,4 +1611,3 @@ export type UiClickProps =
   | SettingsDesignReviewClickProps
   | SettingsExternalMcpClickProps
   | OnboardingClickProps;
-

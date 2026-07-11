@@ -22,8 +22,21 @@ import styles from './WhatsNewPopup.module.css';
 // /api/whats-new; the card shows only when that document has content, and at
 // most once per its `id` (see ../lib/whats-new).
 
-// Fallback for the CTA when the highlight document omits an explicit link.
-const RELEASES_INDEX_URL = 'https://github.com/nexu-io/open-design/releases';
+function withoutOpenDesignDestination(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const path = url.pathname.toLowerCase();
+    if (host === 'open-design.ai' || host.endsWith('.open-design.ai')) return null;
+    if (host === 'github.com' && path.startsWith('/nexu-io/open-design')) return null;
+    if (host === 'x.com' && path.startsWith('/opendesignhq')) return null;
+    if (host === 'discord.gg' && path.startsWith('/mhajsmv6gz')) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
 
 const cardIn: Variants = {
   hidden: { opacity: 0, scale: 0.96, y: 12 },
@@ -49,7 +62,7 @@ type CardModel = {
   /** The release headline, rendered as the main serif title. */
   title: string;
   imageUrl: string | null;
-  linkUrl: string;
+  linkUrl: string | null;
 };
 
 // `active` reports whether Home is the active entry view. EntryShell keeps
@@ -84,7 +97,7 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
         appVersion: info.version,
         title: localized.title,
         imageUrl: info.content.imageUrl ?? null,
-        linkUrl: localized.linkUrl ?? RELEASES_INDEX_URL,
+        linkUrl: withoutOpenDesignDestination(localized.linkUrl),
       });
     });
     return () => {
@@ -134,7 +147,7 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
   }, [active, card]);
 
   const openLink = useCallback(() => {
-    if (card == null) return;
+    if (card?.linkUrl == null) return;
     markWhatsNewSeen(card.id);
     trackWhatsNewPopupClick(analytics.track, {
       page_name: 'home',
@@ -161,7 +174,7 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
           exit="exit"
         >
           <div className={styles.header}>
-            <span className={styles.eyebrow}>Open Design {card.appVersion}</span>
+            <span className={styles.eyebrow}>viaim Design {card.appVersion}</span>
             <Button
               aria-label={t('whatsNew.dismissAria')}
               className={styles.close}
@@ -178,15 +191,17 @@ export function WhatsNewPopup({ active }: { active: boolean }) {
               <h2 className={styles.title} id="whats-new-popup-title">
                 {card.title}
               </h2>
-              <div className={styles.actions}>
-                <Button
-                  data-testid="whats-new-cta"
-                  variant="subtle"
-                  onClick={openLink}
-                >
-                  {t('whatsNew.cta')}
-                </Button>
-              </div>
+              {card.linkUrl ? (
+                <div className={styles.actions}>
+                  <Button
+                    data-testid="whats-new-cta"
+                    variant="subtle"
+                    onClick={openLink}
+                  >
+                    {t('whatsNew.cta')}
+                  </Button>
+                </div>
+              ) : null}
             </div>
             {card.imageUrl != null ? (
               <img alt="" className={styles.image} src={card.imageUrl} />

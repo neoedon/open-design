@@ -1108,15 +1108,6 @@ export function LibrarySection({ active, onOpenProject }: Props) {
             Clip any page, design system, screenshot, image, or Figma import JSON into your Library —
             local-first, one click, no login.
           </p>
-          <a
-            className={styles.clipperDownload}
-            href="https://open-design.ai/clipper"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Icon name="download" size={15} />
-            Get the Open Design Web Clipper
-          </a>
         </div>
       </header>
 

@@ -14,8 +14,6 @@ vi.mock('../../src/analytics/provider', () => ({
   }),
 }));
 
-const PRIVACY_POLICY_HREF = 'https://github.com/nexu-io/open-design/blob/main/PRIVACY.md';
-
 function renderModal(overrides?: { onShare?: () => void; onDecline?: () => void }) {
   const onShare = overrides?.onShare ?? vi.fn();
   const onDecline = overrides?.onDecline ?? vi.fn();
@@ -52,12 +50,9 @@ describe('PrivacyConsentModal', () => {
     expect(footer.textContent ?? '').toMatch(/Privacy/);
   });
 
-  it('exposes the privacy policy via an obvious external link', () => {
+  it('does not expose the removed Open Design privacy-policy link', () => {
     renderModal();
-    const link = screen.getByRole('link', { name: /privacy policy/i });
-    expect(link.getAttribute('href')).toBe(PRIVACY_POLICY_HREF);
-    expect(link.getAttribute('target')).toBe('_blank');
-    expect(link.getAttribute('rel') ?? '').toContain('noopener');
+    expect(screen.queryByRole('link')).toBeNull();
   });
 
   it('invokes onShare when the share button is clicked', () => {

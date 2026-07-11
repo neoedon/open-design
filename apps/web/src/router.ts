@@ -17,6 +17,11 @@ export type EntryHomeView =
   | 'tasks'
   | 'plugins'
   | 'design-systems'
+  | 'brand-assets'
+  | 'image-slicer'
+  | 'design-projects'
+  | 'design-project-sync'
+  | 'figma-dashboard'
   | 'library'
   | 'brands'
   | 'integrations';
@@ -96,6 +101,21 @@ export function parseRoute(pathname: string): Route {
     }
     return { kind: 'home', view: 'design-systems' };
   }
+  if (parts[0] === 'brand-assets') {
+    return { kind: 'home', view: 'brand-assets' };
+  }
+  if (parts[0] === 'image-slicer') {
+    return { kind: 'home', view: 'image-slicer' };
+  }
+  if (parts[0] === 'design-projects') {
+    return { kind: 'home', view: 'design-projects' };
+  }
+  if (parts[0] === 'design-project-sync') {
+    return { kind: 'home', view: 'design-project-sync' };
+  }
+  if (parts[0] === 'figma-dashboard') {
+    return { kind: 'home', view: 'figma-dashboard' };
+  }
   if (parts[0] === 'brands') {
     // Brands merged into Design systems: a brand is a `user:<id>` design system
     // and extraction now starts from the design-system create wizard. Legacy
@@ -135,6 +155,11 @@ export function buildPath(route: Route): string {
     if (route.view === 'tasks') return '/automations';
     if (route.view === 'plugins') return '/plugins';
     if (route.view === 'design-systems') return '/design-systems';
+    if (route.view === 'brand-assets') return '/brand-assets';
+    if (route.view === 'image-slicer') return '/image-slicer';
+    if (route.view === 'design-projects') return '/design-projects';
+    if (route.view === 'design-project-sync') return '/design-project-sync';
+    if (route.view === 'figma-dashboard') return '/figma-dashboard';
     if (route.view === 'library') return LIBRARY_UI_VISIBLE ? '/library' : '/';
     if (route.view === 'brands') {
       return route.brandId ? `/brands/${encodeURIComponent(route.brandId)}` : '/brands';

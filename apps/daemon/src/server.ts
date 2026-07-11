@@ -654,6 +654,8 @@ import {
   parseHostHeader,
 } from './origin-validation.js';
 import { registerLibraryRoutes } from './routes/library.js';
+import { registerDesignProjectsRoutes } from './routes/design-projects.js';
+import { createDesignProjectsService } from './design-projects/service.js';
 import {
   libraryExtensionAllowedOrigins,
   seedLibraryExtensionOrigins,
@@ -862,6 +864,10 @@ const ALL_SKILL_LIKE_ROOTS = [
 // the clipper / `od library import`. Derived from RUNTIME_DATA_DIR per the
 // daemon data directory contract.
 const LIBRARY_DIR = path.join(RUNTIME_DATA_DIR, 'library');
+const designProjectsService = createDesignProjectsService({
+  dataDir: RUNTIME_DATA_DIR,
+  env: process.env,
+});
 fs.mkdirSync(PROJECTS_DIR, { recursive: true });
 for (const dir of [USER_SKILLS_DIR, USER_DESIGN_SYSTEMS_DIR, BRANDS_DIR, USER_DESIGN_TEMPLATES_DIR, PLUGIN_REGISTRY_ROOTS.userPluginsRoot, LIBRARY_DIR]) {
   fs.mkdirSync(dir, { recursive: true });
@@ -2830,6 +2836,10 @@ export async function startServer({
     conversations: conversationDeps,
     auth: authDeps,
   });
+  registerDesignProjectsRoutes(app, {
+    http: httpDeps,
+    designProjects: designProjectsService,
+  });
   app.post('/api/projects/:id/figma/import', (req, res) => {
     figmaUpload.single('file')(req, res, async (err) => {
       if (err) return sendMulterError(res, err);
@@ -4668,7 +4678,7 @@ export async function startServer({
       typeof process.env[def.defaultModelEnvVar] === 'string' &&
       process.env[def.defaultModelEnvVar]?.trim(),
     );
-    const safeReasoning =
+    let safeReasoning =
       typeof reasoning === 'string' && Array.isArray(def.reasoningOptions)
         ? (def.reasoningOptions.find((r) => r.id === reasoning)?.id ?? null)
         : null;
@@ -5637,7 +5647,9 @@ export async function startServer({
     // — a missing or read-only config.toml is fine, and the Codex CLI still
     // surfaces the original error if the write fails. See issue #4276 / #3408.
     if (def.id === 'codex') {
-      const { normalizeCodexConfigFile } = await import('./codex-config-normalize.js');
+      const {
+        normalizeCodexConfigFile,
+      } = await import('./codex-config-normalize.js');
       // Route through spawnEnvForAgent so resolveCodexConfigPath sees the same
       // fully-expanded CODEX_HOME the Codex child process will see. In
       // particular, spawnEnvForAgent calls expandConfiguredEnv which expands
@@ -5646,9 +5658,30 @@ export async function startServer({
       // in the normalizer while the child resolves it to the absolute path,
       // leaving the real config untouched. Mirrors the diagnostics-export.ts
       // `envFor('codex')` pattern. See issue #4276.
-      await normalizeCodexConfigFile(
-        spawnEnvForAgent('codex', process.env, configuredAgentEnv),
+      const codexEnv = spawnEnvForAgent(
+        'codex',
+        process.env,
+        configuredAgentEnv,
       );
+      await normalizeCodexConfigFile(codexEnv);
+
+      // A concrete model override must not inherit a reasoning preset that
+      // only belongs to the model in the user's global Codex config. Current
+      // Codex Desktop can write GPT-5.6 + `ultra`; the CLI serializes that as
+      // `max`, which GPT-5.5 rejects. Add a run-scoped compatible override and
+      // leave the user's global GPT-5.6 preference untouched.
+      const { resolveCodexReasoningForLaunch } = await import(
+        './runtimes/codex-reasoning.js'
+      );
+      const compatibleReasoning = await resolveCodexReasoningForLaunch({
+        model: safeModel,
+        reasoning: safeReasoning,
+        env: codexEnv,
+      });
+      if (compatibleReasoning !== safeReasoning) {
+        safeReasoning = compatibleReasoning;
+        agentOptions.reasoning = compatibleReasoning;
+      }
     }
 
     // Serialize antigravity spawns whose buildArgs writes a concrete
@@ -8286,6 +8319,7 @@ export async function startServer({
   assertServerContextSatisfiesRoutes({
     db,
     design,
+    designProjects: designProjectsService,
     http: httpDeps,
     paths: pathDeps,
     ids: idDeps,
