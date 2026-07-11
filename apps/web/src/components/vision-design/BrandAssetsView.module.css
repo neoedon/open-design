@@ -303,6 +303,29 @@
   justify-content: center;
 }
 
+.emptyState {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 260px;
+  padding: 32px;
+  text-align: center;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-panel);
+}
+
+.emptyState strong {
+  color: var(--text-strong);
+}
+
+.emptyState span {
+  max-width: 520px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
 .fontGrid {
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);

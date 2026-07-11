@@ -7409,8 +7409,26 @@ Options:
 
 async function writeDesignProjectsSnapshotOut(snapshot, out) {
   const body = `${JSON.stringify(snapshot, null, 2)}\n`;
-  const { writeFile } = await import('node:fs/promises');
-  await writeFile(out, body, 'utf8');
+  const { open, rename, unlink } = await import('node:fs/promises');
+  const { randomBytes } = await import('node:crypto');
+  const { basename: pathBasename, dirname: pathDirname, join: pathJoin } = await import('node:path');
+  const tempPath = pathJoin(
+    pathDirname(out),
+    `.${pathBasename(out)}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`,
+  );
+  let handle;
+  try {
+    handle = await open(tempPath, 'wx', 0o600);
+    await handle.writeFile(body, 'utf8');
+    await handle.sync();
+    await handle.close();
+    handle = undefined;
+    await rename(tempPath, out);
+  } catch (error) {
+    await handle?.close().catch(() => undefined);
+    await unlink(tempPath).catch(() => undefined);
+    throw error;
+  }
   return Buffer.byteLength(body);
 }
 
@@ -7475,7 +7493,7 @@ async function runDesignProjects(args) {
       const snapshot = await response.json();
       if (flags.out) {
         const bytes = await writeDesignProjectsSnapshotOut(snapshot, flags.out);
-        if (flags.json) return writeJson({ ok: true, out: flags.out, bytes, snapshot });
+        if (flags.json) return writeJson({ ok: true, out: flags.out, bytes });
         console.log(`Wrote ${flags.out} (${bytes} bytes)`);
         return;
       }

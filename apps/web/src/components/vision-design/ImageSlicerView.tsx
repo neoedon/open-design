@@ -10,6 +10,11 @@ import {
   DEFAULT_SLICE_SIZE,
   MAX_IMAGE_FILES,
   MAX_IMAGE_FILE_SIZE,
+  MAX_TOTAL_IMAGE_FILE_SIZE,
+  MAX_TOTAL_OUTPUT_PIXELS,
+  MAX_TOTAL_SLICE_COUNT,
+  MAX_ZIP_BYTES,
+  readSupportedImageDimensions,
   type SlicePlan,
 } from './image-slicer';
 import styles from './ImageSlicerView.module.css';
@@ -36,7 +41,8 @@ interface LoadedImage {
 }
 
 function isImageFile(file: File): boolean {
-  return file.type.startsWith('image/') || /\.(avif|bmp|gif|jpe?g|png|tiff?|webp)$/i.test(file.name);
+  return /\.(bmp|gif|jpe?g|png|webp)$/i.test(file.name)
+    || ['image/bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/webp'].includes(file.type);
 }
 
 function outputFormat(file: File): { extension: string; mime: string } {
@@ -88,12 +94,17 @@ function triggerBlobDownload(blob: Blob, fileName: string) {
 }
 
 async function zipSlices(slices: GeneratedSlice[]): Promise<Blob> {
-  const entries = await Promise.all(
-    slices.map(async (slice) => ({
+  const totalBytes = slices.reduce((sum, slice) => sum + slice.blob.size, 0);
+  if (totalBytes > MAX_ZIP_BYTES) {
+    throw new Error('ZIP 内容不能超过 128 MiB，请减少图片或切片数量。');
+  }
+  const entries: Array<{ path: string; content: Uint8Array }> = [];
+  for (const slice of slices) {
+    entries.push({
       path: slice.name,
       content: new Uint8Array(await slice.blob.arrayBuffer()),
-    })),
-  );
+    });
+  }
   return buildZip(entries);
 }
 
@@ -148,10 +159,17 @@ export function ImageSlicerView() {
       return;
     }
 
+    const selectedFiles = withinSize.slice(0, MAX_IMAGE_FILES);
+    const selectedBytes = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+    if (selectedBytes > MAX_TOTAL_IMAGE_FILE_SIZE) {
+      setError('所选图片总大小不能超过 64 MiB。');
+      return;
+    }
+
     clearObjectUrls();
     setResults([]);
     setError(null);
-    setFiles(withinSize.slice(0, MAX_IMAGE_FILES));
+    setFiles(selectedFiles);
 
     if (withinSize.length > MAX_IMAGE_FILES) setStatus(`已保留前 ${MAX_IMAGE_FILES} 张图片。`);
     else if (withinSize.length < images.length) setStatus('已忽略超过大小限制的图片。');
@@ -170,16 +188,13 @@ export function ImageSlicerView() {
 
   async function processFile(
     file: File,
-    target: number | null,
-    sliceWidth: number,
-    sliceHeight: number,
+    plan: SlicePlan,
   ): Promise<SliceResult> {
     const loaded = await loadImage(file, registerUrl);
-    const plan = calculateSlicePlan(loaded.width, loaded.height, {
-      targetWidth: target,
-      maxSliceWidth: sliceWidth,
-      maxSliceHeight: sliceHeight,
-    });
+    if (loaded.width !== plan.sourceWidth || loaded.height !== plan.sourceHeight) {
+      loaded.close?.();
+      throw new Error('图片解码尺寸与安全预检不一致。');
+    }
     const { extension, mime } = outputFormat(file);
     const baseName = file.name.replace(/\.[^.]+$/, '');
     const outputName = plan.resized ? `${baseName}_w${plan.outputWidth}` : baseName;
@@ -238,16 +253,44 @@ export function ImageSlicerView() {
       const target = parseOptionalWidth(targetWidth);
       const sliceWidth = Number(maxWidth);
       const sliceHeight = Number(maxHeight);
+      const plannedFiles: Array<{ file: File; plan: SlicePlan }> = [];
+      let totalOutputPixels = 0;
+      let totalSlices = 0;
+      for (const file of files) {
+        const source = await readSupportedImageDimensions(file);
+        const plan = calculateSlicePlan(source.width, source.height, {
+          targetWidth: target,
+          maxSliceWidth: sliceWidth,
+          maxSliceHeight: sliceHeight,
+        });
+        totalOutputPixels += plan.outputWidth * plan.outputHeight;
+        totalSlices += plan.slices.length;
+        if (totalOutputPixels > MAX_TOTAL_OUTPUT_PIXELS) {
+          throw new Error('本次任务输出总量不能超过 67.1 百万像素。');
+        }
+        if (totalSlices > MAX_TOTAL_SLICE_COUNT) {
+          throw new Error(`本次任务最多生成 ${MAX_TOTAL_SLICE_COUNT} 张切片。`);
+        }
+        plannedFiles.push({ file, plan });
+      }
       const nextResults: SliceResult[] = [];
-      for (let index = 0; index < files.length; index += 1) {
-        setStatus(`处理中 ${index + 1}/${files.length}…`);
-        const result = await processFile(files[index]!, target, sliceWidth, sliceHeight);
+      let generatedBytes = 0;
+      for (let index = 0; index < plannedFiles.length; index += 1) {
+        setStatus(`处理中 ${index + 1}/${plannedFiles.length}…`);
+        const planned = plannedFiles[index]!;
+        const result = await processFile(planned.file, planned.plan);
+        generatedBytes += result.slices.reduce((sum, slice) => sum + slice.blob.size, 0);
+        if (generatedBytes > MAX_ZIP_BYTES) {
+          throw new Error('生成内容不能超过 128 MiB，请减少图片或降低目标尺寸。');
+        }
         nextResults.push(result);
         setResults([...nextResults]);
       }
       const total = nextResults.reduce((sum, result) => sum + result.slices.length, 0);
       setStatus(`完成，共生成 ${total} 张切片。`);
     } catch (caught) {
+      clearObjectUrls();
+      setResults([]);
       setError(caught instanceof Error ? caught.message : '图片处理失败。');
       setStatus('处理失败');
     } finally {
@@ -335,7 +378,7 @@ export function ImageSlicerView() {
           <input
             ref={fileInputRef}
             className={styles.fileInput}
-            accept="image/*"
+            accept=".bmp,.gif,.jpg,.jpeg,.png,.webp,image/bmp,image/gif,image/jpeg,image/png,image/webp"
             multiple
             type="file"
             onChange={(event) => replaceFiles(Array.from(event.currentTarget.files ?? []))}

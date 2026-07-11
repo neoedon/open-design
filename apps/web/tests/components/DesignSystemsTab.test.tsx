@@ -126,7 +126,7 @@ describe('DesignSystemsTab', () => {
     await screen.findByTestId('design-kit-view-user:acme');
   });
 
-  it('exposes only personal and official design-system scopes', () => {
+  it('uses design-system scopes directly instead of a design-system/template switcher', () => {
     render(
       <DesignSystemsTab
         systems={systems}
@@ -141,9 +141,7 @@ describe('DesignSystemsTab', () => {
     expect(screen.queryByRole('tab', { name: 'Template' })).toBeNull();
     expect(screen.getByRole('tab', { name: 'Your systems' }).textContent).toContain('1');
     expect(screen.getByRole('tab', { name: 'Official presets' }).textContent).toContain('1');
-    expect(screen.queryByRole('tab', { name: 'Enterprise' })).toBeNull();
-    expect(screen.queryByText('Coming soon')).toBeNull();
-    expect(screen.queryByText('Enterprise design systems')).toBeNull();
+    expect(screen.getByRole('tab', { name: 'Enterprise' }).textContent).toContain('Coming soon');
   });
 
   it('separates user-created design systems from the official preset library', () => {

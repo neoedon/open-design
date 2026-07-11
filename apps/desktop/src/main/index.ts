@@ -486,6 +486,32 @@ function installDesktopMenu(
         label: "Help",
         role: "help",
         submenu: [
+          {
+            label: "Documentation",
+            click() {
+              void shell.openExternal("https://github.com/nexu-io/open-design#readme");
+            },
+          },
+          { type: "separator" },
+          {
+            label: "Contact Us",
+            click() {
+              void shell.openExternal("https://x.com/OpenDesignHQ");
+            },
+          },
+          {
+            label: "Report Issue",
+            click() {
+              void shell.openExternal("https://github.com/nexu-io/open-design/issues/new");
+            },
+          },
+          {
+            label: "Join Discord",
+            click() {
+              void shell.openExternal("https://discord.gg/mHAjSMV6gz");
+            },
+          },
+          { type: "separator" },
           { label: "Export Diagnostics…", click: exportDiagnostics },
         ],
       },

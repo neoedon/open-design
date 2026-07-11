@@ -210,11 +210,7 @@ type OnboardingAgentTestState =
   | { status: 'running'; inputKey: string }
   | { status: 'done'; inputKey: string; result: ConnectionTestResponse };
 
-<<<<<<< HEAD
 // The topbar chips (model switcher and Use everywhere)
-=======
-// The topbar chips (model switcher, Use everywhere)
->>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
 // collapse into the settings dropdown when the viewport gets
 // narrow. The transition is driven entirely by CSS @media queries
 // in `entry-layout.css` so server and client render identical
@@ -1163,7 +1159,7 @@ export function EntryShell({
               )}
             </div>
             <div data-testid="entry-view-brand-assets" data-active={view === 'brand-assets' ? 'true' : 'false'} {...inactiveViewProps(view === 'brand-assets')}>
-              <BrandAssetsView />
+              <BrandAssetsView active={view === 'brand-assets'} />
             </div>
             <div data-testid="entry-view-image-slicer" data-active={view === 'image-slicer' ? 'true' : 'false'} {...inactiveViewProps(view === 'image-slicer')}>
               <ImageSlicerView />
@@ -2538,11 +2534,7 @@ function OnboardingView({
           <span
             className="onboarding-cloud__logo"
             role="img"
-<<<<<<< HEAD
             aria-label={t('app.brand')}
-=======
-            aria-label="viaim Design"
->>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
           />
           <h1 className="onboarding-cloud__title">{t('settings.onboardingCloudTitle')}</h1>
           <p className="onboarding-cloud__body">{t('settings.onboardingCloudBody')}</p>
@@ -2636,11 +2628,7 @@ function OnboardingView({
           )}
         </div>
         <footer className="onboarding-cloud__footer">
-<<<<<<< HEAD
           © {new Date().getFullYear()} {t('app.brand')} · {t('settings.onboardingCloudRights')}
-=======
-          © {new Date().getFullYear()} viaim Design · {t('settings.onboardingCloudRights')}
->>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
         </footer>
       </section>
     );

@@ -163,9 +163,7 @@ export function DesignProjectsView({ active }: DesignProjectsViewProps) {
       } else {
         const loaded = await fetchSnapshot(false);
         if (loaded) {
-          setNotice(loaded.source === 'published'
-            ? '当前为静态发布模式，已重新读取已发布 JSON。'
-            : '同步未配置，已重新读取本地快照。');
+          setNotice('同步未配置，已重新读取本地快照。');
         }
       }
     } catch (caught) {
@@ -200,7 +198,7 @@ export function DesignProjectsView({ active }: DesignProjectsViewProps) {
         </div>
         <div className={styles.headerActions}>
           <span className={styles.sourceBadge} data-source={dataSource}>
-            {dataSource === 'daemon' ? '本地 daemon 快照' : dataSource === 'published' ? '已发布静态快照' : '等待数据'}
+            {dataSource === 'daemon' ? '本地 daemon 快照' : '等待数据'}
           </span>
           {snapshot?.source.wikiUrl ? <a href={snapshot.source.wikiUrl} rel="noreferrer" target="_blank">查看来源 <ExternalLink aria-hidden="true" size={13} /></a> : null}
           <Button variant="ghost" disabled={refreshing} onClick={() => void refresh()}>

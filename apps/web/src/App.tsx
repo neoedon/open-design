@@ -700,7 +700,7 @@ function AppInner() {
   // the old theme. Safe here because the component tree is ssr:false.
   useLayoutEffect(() => {
     applyAppearanceToDocument({
-      theme: config.theme ?? 'light',
+      theme: config.theme ?? 'system',
       accentColor: config.accentColor,
     });
   }, [config.theme, config.accentColor]);
@@ -1279,7 +1279,7 @@ function AppInner() {
       // React re-render of the whole tree before the layout effect re-applies
       // it — which reads as a perceptible lag after the click.
       applyAppearanceToDocument({
-        theme: theme ?? 'light',
+        theme: theme ?? 'system',
         accentColor: config.accentColor,
       });
       saveConfig(next);

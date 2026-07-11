@@ -14,7 +14,7 @@ import {
 import { Button, Select, Textarea } from '@open-design/components';
 
 import { downloadRemoteAsset, openExternalUrl, RemoteDownloadError } from './download';
-import { visionDesignAssetUrl } from './config';
+import { VISION_DESIGN_GUIDELINE_URL, visionDesignAssetUrl } from './config';
 import styles from './BrandAssetsView.module.css';
 
 type BrandTab = 'guidelines' | 'logos' | 'fonts';
@@ -50,8 +50,8 @@ export interface MiSansFontAsset {
   url: string;
 }
 
-const GUIDELINE_FILE_NAME = 'viaim-visual-guidelines-260309-internal-draft.pdf';
-const GUIDELINE_URL = visionDesignAssetUrl(`brand-assets/${GUIDELINE_FILE_NAME}`);
+const GUIDELINE_FILE_NAME = 'viaim-visual-guidelines.pdf';
+const GUIDELINE_URL = VISION_DESIGN_GUIDELINE_URL;
 
 function formatAsset(folder: string, baseName: string, format: DownloadFormat): AssetFormat {
   const extension = format.toLowerCase();
@@ -166,7 +166,11 @@ interface DownloadNotice {
   tone: 'error' | 'success';
 }
 
-export function BrandAssetsView() {
+export interface BrandAssetsViewProps {
+  active?: boolean;
+}
+
+export function BrandAssetsView({ active = true }: BrandAssetsViewProps) {
   const [activeTab, setActiveTab] = useState<BrandTab>('logos');
   const [logoCategory, setLogoCategory] = useState<LogoCategoryId>('single');
   const [selectedFontId, setSelectedFontId] = useState('regular');
@@ -187,7 +191,7 @@ export function BrandAssetsView() {
     let cancelled = false;
     let activeFace: FontFace | null = null;
     setFontReady(false);
-    if (activeTab !== 'fonts') return undefined;
+    if (!active || activeTab !== 'fonts') return undefined;
     if (typeof window === 'undefined' || !('FontFace' in window)) return undefined;
 
     const face = new FontFace(previewFamily, `url("${selectedFont.url}")`, {
@@ -213,7 +217,7 @@ export function BrandAssetsView() {
       cancelled = true;
       if (activeFace) document.fonts.delete(activeFace);
     };
-  }, [activeTab, previewFamily, selectedFont.url, selectedFont.weight]);
+  }, [active, activeTab, previewFamily, selectedFont.url, selectedFont.weight]);
 
   async function download(url: string, fileName: string) {
     const key = `${url}:${fileName}`;
@@ -240,7 +244,7 @@ export function BrandAssetsView() {
     return (
       <Button
         className={styles.downloadButton}
-        disabled={pending}
+        disabled={busyDownload !== null}
         key={format.fileName}
         variant="ghost"
         onClick={() => void download(format.url, format.fileName)}
@@ -289,12 +293,12 @@ export function BrandAssetsView() {
         </div>
       ) : null}
 
-      {activeTab === 'guidelines' ? (
+      {active && activeTab === 'guidelines' && GUIDELINE_URL ? (
         <div className={styles.guidelineGrid}>
           <article className={styles.infoCard}>
             <span className={styles.cardIcon}><FileText aria-hidden="true" size={19} /></span>
             <div>
-              <span className={styles.eyebrow}>PDF · 260309 Internal Draft</span>
+              <span className={styles.eyebrow}>PDF · 受控来源</span>
               <h2>viaim 品牌视觉规范</h2>
               <p>在线查阅当前品牌视觉规范，或下载 PDF 保留本地副本。</p>
             </div>
@@ -312,7 +316,15 @@ export function BrandAssetsView() {
         </div>
       ) : null}
 
-      {activeTab === 'logos' ? (
+      {active && activeTab === 'guidelines' && !GUIDELINE_URL ? (
+        <div className={styles.emptyState} role="status">
+          <FileText aria-hidden="true" size={22} />
+          <strong>品牌规范未配置</strong>
+          <span>请通过受控的 HTTPS 地址配置品牌规范，内部草案不会从公开资产域名自动加载。</span>
+        </div>
+      ) : null}
+
+      {active && activeTab === 'logos' ? (
         <div className={styles.logoSection}>
           <div className={styles.categoryBar}>
             <div>
@@ -354,7 +366,7 @@ export function BrandAssetsView() {
         </div>
       ) : null}
 
-      {activeTab === 'fonts' ? (
+      {active && activeTab === 'fonts' ? (
         <div className={styles.fontGrid}>
           <aside className={styles.fontControls}>
             <div>

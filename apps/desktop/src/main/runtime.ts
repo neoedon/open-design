@@ -840,11 +840,7 @@ function createPendingHtml(): string {
 <html>
   <head>
     <meta charset="utf-8" />
-<<<<<<< HEAD
     <title>${DEFAULT_APP_NAME}</title>
-=======
-    <title>viaim Design</title>
->>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
     <style>
       html,
       body {
@@ -1031,11 +1027,7 @@ const SPLASH_STAGE_SEQUENCE: readonly SplashBootStage[] = [
 ];
 
 const SPLASH_STAGE_LABELS: Record<SplashBootStage, string> = {
-<<<<<<< HEAD
   starting: `Starting ${DEFAULT_APP_NAME}`,
-=======
-  starting: "Starting viaim Design",
->>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
   engine: "Starting the local engine",
   engineReady: "Local engine ready",
   interface: "Preparing the interface",
@@ -1155,11 +1147,7 @@ export function createSplashWindow(): SplashWindowHandle {
     height: 900,
     resizable: false,
     show: true,
-<<<<<<< HEAD
     title: DEFAULT_APP_NAME,
-=======
-    title: "viaim Design",
->>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
     width: 1280,
     webPreferences: {
       contextIsolation: true,
@@ -1828,11 +1816,7 @@ export async function createDesktopRuntime(options: DesktopRuntimeOptions): Prom
 
   const consoleEntries: DesktopConsoleEntry[] = [];
   const petWindow = createDesktopPetWindow(preloadPath, options.osLocale);
-<<<<<<< HEAD
   const windowTitle = options.windowTitle ?? DEFAULT_APP_NAME;
-=======
-  const windowTitle = options.windowTitle ?? "viaim Design";
->>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
   const window = new BrowserWindow({
     height: 900,
     icon: resolveDesktopIconPath(),

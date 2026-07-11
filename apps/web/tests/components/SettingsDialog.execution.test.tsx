@@ -4734,37 +4734,8 @@ describe('SettingsDialog about interactions', () => {
     expect(screen.getByText(en['settings.updateStatusDevelopment'])).toBeTruthy();
     expect(screen.queryByRole('button', { name: en['settings.installLatest'] })).toBeNull();
     expect(screen.queryByRole('combobox')).toBeNull();
-<<<<<<< HEAD
     expect(screen.queryByRole('button', { name: en['settings.updateViewReleases'] })).toBeNull();
     expect(openExternalUrlMock).not.toHaveBeenCalled();
-=======
-
-    expect(screen.queryByRole('button', { name: en['settings.updateViewReleases'] })).toBeNull();
-    expect(openExternalUrlMock).not.toHaveBeenCalled();
-  });
-
-  it('updates the silent-update preference without retaining the React event', () => {
-    renderSettingsDialog(
-      { mode: 'daemon', agentId: 'codex', allowSilentUpdates: false },
-      {
-        initialSection: 'about',
-        appVersionInfo: {
-          version: '0.4.1',
-          channel: 'beta',
-          packaged: false,
-          platform: 'darwin',
-          arch: 'arm64',
-        },
-      },
-    );
-
-    const checkbox = screen.getByRole('checkbox', {
-      name: new RegExp(en['settings.allowSilentUpdates'], 'i'),
-    }) as HTMLInputElement;
-    expect(checkbox.checked).toBe(false);
-    fireEvent.click(checkbox);
-    expect(checkbox.checked).toBe(true);
->>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
   });
 
   it('downloads an available packaged update from the about page', async () => {

@@ -1361,7 +1361,7 @@ export function SettingsDialog({
   >(() => new Set());
   const previousInitialRef = useRef(initial);
   const lastSavedAppearanceRef = useRef({
-    theme: initial.theme ?? 'light',
+    theme: initial.theme ?? 'system',
     accentColor: resolveAccentColor(initial.accentColor),
   });
 
@@ -1377,7 +1377,7 @@ export function SettingsDialog({
 
   useEffect(() => {
     lastSavedAppearanceRef.current = {
-      theme: initial.theme ?? 'light',
+      theme: initial.theme ?? 'system',
       accentColor: resolveAccentColor(initial.accentColor),
     };
   }, [initial.theme, initial.accentColor]);
@@ -3087,7 +3087,7 @@ export function SettingsDialog({
           await onPersist(snapshot, persistOptions);
           autosaveLastSavedRef.current = snapshot;
           lastSavedAppearanceRef.current = {
-            theme: snapshot.theme ?? 'light',
+            theme: snapshot.theme ?? 'system',
             accentColor: resolveAccentColor(snapshot.accentColor),
           };
           // If a newer edit landed while the request was in flight,
@@ -5632,13 +5632,12 @@ export function SettingsDialog({
                   <input
                     checked={cfg.allowSilentUpdates === true}
                     type="checkbox"
-                    onChange={(event) => {
-                      const checked = event.currentTarget.checked;
+                    onChange={(event) =>
                       setCfg((current) => ({
                         ...current,
-                        allowSilentUpdates: checked,
-                      }));
-                    }}
+                        allowSilentUpdates: event.currentTarget.checked,
+                      }))
+                    }
                   />
                   <span className="settings-about-toggle-copy">
                     <span>{t('settings.allowSilentUpdates')}</span>
@@ -8096,7 +8095,7 @@ function AppearanceSection({
 }) {
   const { t } = useI18n();
   const analytics = useAnalytics();
-  const current = cfg.theme ?? 'light';
+  const current = cfg.theme ?? 'system';
   const currentAccent = normalizeAccentColor(cfg.accentColor) ?? DEFAULT_ACCENT_COLOR;
   const accentLabel = t('pet.fieldAccent');
   const defaultAccentLabel = t('pet.fieldAccentDefault');

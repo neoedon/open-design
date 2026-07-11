@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
@@ -129,9 +129,24 @@ describe('od design-projects', () => {
     ]);
     expect(JSON.parse(result.stdout)).toMatchObject({ ok: true, out: output, bytes: expect.any(Number) });
     expect(JSON.parse(await readFile(output, 'utf8'))).toEqual(snapshot);
+    if (process.platform !== 'win32') {
+      expect((await stat(output)).mode & 0o777).toBe(0o600);
+    }
     expect(requests).toEqual([
       { method: 'POST', url: '/api/design-projects/sync' },
       { method: 'GET', url: '/api/design-projects/snapshot' },
     ]);
+  });
+
+  it('does not duplicate snapshot contents to stdout when --out is used', async () => {
+    const output = path.join(tempDir, 'snapshot.json');
+    const result = await runCli([
+      'design-projects', 'snapshot', '--daemon-url', baseUrl, '--out', output, '--json',
+    ]);
+
+    const envelope = JSON.parse(result.stdout) as Record<string, unknown>;
+    expect(envelope).toMatchObject({ ok: true, out: output, bytes: expect.any(Number) });
+    expect(envelope).not.toHaveProperty('snapshot');
+    expect(JSON.parse(await readFile(output, 'utf8'))).toEqual(snapshot);
   });
 });

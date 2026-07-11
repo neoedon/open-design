@@ -21,25 +21,34 @@ const snapshot: DesignProjectsSnapshot = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('design projects client', () => {
-  it('falls back to the published JSON when the local snapshot responds non-OK', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response('bad gateway', { status: 502 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(snapshot), { status: 200 }));
+  it('loads snapshots from the local daemon', async () => {
+    const fetchMock = vi.fn(async (_input: string | URL) => (
+      new Response(JSON.stringify(snapshot), { status: 200 })
+    ));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(loadDesignProjectsSnapshot()).resolves.toEqual({ snapshot, source: 'published' });
+    await expect(loadDesignProjectsSnapshot()).resolves.toEqual({ snapshot, source: 'daemon' });
+    expect(fetchMock).toHaveBeenCalledOnce();
     expect(fetchMock.mock.calls[0]?.[0]).toBe(DESIGN_PROJECTS_ENDPOINTS.snapshot);
-    expect(String(fetchMock.mock.calls[1]?.[0])).toContain(DESIGN_PROJECTS_ENDPOINTS.publishedSnapshot);
   });
 
-  it('falls back when the local snapshot returns a malformed success payload', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(snapshot), { status: 200 }));
+  it('does not send project data requests to a public fallback when the daemon fails', async () => {
+    const fetchMock = vi.fn(async () => new Response(
+      JSON.stringify({ error: { message: 'bad gateway' } }),
+      { status: 502 },
+    ));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(loadDesignProjectsSnapshot()).resolves.toEqual({ snapshot, source: 'published' });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await expect(loadDesignProjectsSnapshot()).rejects.toThrow('bad gateway');
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('rejects a malformed local snapshot instead of publishing or fetching it elsewhere', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(loadDesignProjectsSnapshot()).rejects.toThrow('本地设计项目快照格式无效');
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   it('surfaces nested daemon API error messages for status', async () => {

@@ -75,10 +75,6 @@ describe('WhatsNewPopup fetch/show lifecycle', () => {
     // Version eyebrow + release title as the main serif copy. The long body
     // is intentionally not rendered on the card.
     expect(screen.getByText('viaim Design 0.12.1')).toBeTruthy();
-<<<<<<< HEAD
-=======
-    expect(screen.queryByTestId('whats-new-cta')).toBeNull();
->>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
     expect(screen.getByText('Design system sync')).toBeTruthy();
     // A non-modal, dismissible toast is a complementary landmark, NOT a dialog —
     // so it never collides with `getByRole('dialog')` (e.g. the Settings modal).

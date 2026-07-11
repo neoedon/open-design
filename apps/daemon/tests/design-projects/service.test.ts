@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -7,6 +7,7 @@ import {
   DesignProjectsServiceError,
   createDesignProjectsService,
   parseLarkCliJson,
+  resolveCommandOnPath,
   type DesignProjectsLarkCliRunner,
 } from '../../src/design-projects/service.js';
 
@@ -22,15 +23,20 @@ const FIELD_FIXTURES = [
 
 class FakeLarkRunner implements DesignProjectsLarkCliRunner {
   calls: string[][] = [];
+  stdinInputs: Array<string | undefined> = [];
   fail = false;
   delayMs = 0;
+  includeTargetTable = true;
+  forceHasMore = false;
+  firstRecordTitle = '首页改版';
 
   async isAvailable(): Promise<boolean> {
     return true;
   }
 
-  async run(args: readonly string[]): Promise<unknown> {
+  async run(args: readonly string[], stdin?: string): Promise<unknown> {
     this.calls.push([...args]);
+    this.stdinInputs.push(stdin);
     if (this.delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, this.delayMs));
     }
@@ -51,7 +57,9 @@ class FakeLarkRunner implements DesignProjectsLarkCliRunner {
       return {
         data: {
           tables: [
-            { id: 'tbl-main-private', name: '设计项目需求提报' },
+            ...(this.includeTargetTable
+              ? [{ id: 'tbl-main-private', name: '设计项目需求提报' }]
+              : []),
             { id: 'tbl-other-private', name: 'Vision Design' },
           ],
         },
@@ -67,7 +75,7 @@ class FakeLarkRunner implements DesignProjectsLarkCliRunner {
         return {
           data: {
             data: [[
-              '首页改版',
+              this.firstRecordTitle,
               false,
               'P0',
               { name: 'Alice', open_id: 'ou-private', union_id: 'on-private' },
@@ -95,7 +103,7 @@ class FakeLarkRunner implements DesignProjectsLarkCliRunner {
           ]],
           field_id_list: FIELD_FIXTURES.map((field) => field.id),
           record_id_list: ['rec-2'],
-          has_more: false,
+          has_more: this.forceHasMore,
         },
       };
     }
@@ -143,6 +151,12 @@ describe('design project snapshot service', () => {
     expect(snapshot.records[0]?.fields['需求方 - Proposer']).toBe('Alice');
     expect(snapshot.records[0]?.fields['需求附件 - Attachment']).toEqual(['brief.pdf']);
     expect(runner.calls.filter((args) => args.includes('+record-list'))).toHaveLength(2);
+    const wikiCallIndex = runner.calls.findIndex((args) => args[0] === 'wiki');
+    expect(runner.calls[wikiCallIndex]).toContain('-');
+    expect(runner.calls[wikiCallIndex]?.join(' ')).not.toContain('wiki-private-token');
+    expect(JSON.parse(runner.stdinInputs[wikiCallIndex] ?? '{}')).toEqual({
+      token: 'wiki-private-token',
+    });
 
     const stored = await readFile(service().snapshotPath, 'utf8');
     expect(stored).not.toContain('wiki-private-token');
@@ -177,6 +191,53 @@ describe('design project snapshot service', () => {
     });
     expect(await readFile(subject.snapshotPath, 'utf8')).toBe(before);
     expect(await subject.readSnapshot()).toMatchObject({ syncedAt: '2026-07-11T08:00:00.000Z' });
+  });
+
+  it('fails closed instead of syncing the first unrelated table', async () => {
+    runner.includeTargetTable = false;
+
+    await expect(service().sync()).rejects.toMatchObject({
+      code: 'DESIGN_PROJECTS_SYNC_FAILED',
+      message: 'The configured design project table was not found: 设计项目需求提报.',
+    });
+    expect(runner.calls.some((args) => args.includes('+field-list'))).toBe(false);
+  });
+
+  it('stops runaway pagination at the bounded page limit', async () => {
+    runner.forceHasMore = true;
+
+    await expect(service().sync()).rejects.toMatchObject({
+      code: 'DESIGN_PROJECTS_SYNC_FAILED',
+      message: 'Feishu pagination exceeded the design project sync limit.',
+    });
+    expect(runner.calls.filter((args) => args.includes('+record-list'))).toHaveLength(100);
+  });
+
+  it('stops while building the first record that exceeds the snapshot byte budget', async () => {
+    runner.firstRecordTitle = 'x'.repeat(20_000);
+    const subject = createDesignProjectsService({
+      dataDir,
+      runner,
+      env: { FEISHU_DESIGN_PROJECT_WIKI_TOKEN: 'wiki-private-token' },
+      snapshotByteLimit: 8_000,
+    });
+
+    await expect(subject.sync()).rejects.toMatchObject({
+      code: 'DESIGN_PROJECTS_SYNC_FAILED',
+      message: 'The design project snapshot exceeded the 64 MiB safety limit.',
+    });
+    expect(runner.calls.filter((args) => args.includes('+record-list'))).toHaveLength(1);
+    await expect(readFile(subject.snapshotPath, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  it('resolves the concrete CLI path that will be executed', async () => {
+    const binDir = path.join(dataDir, 'bin');
+    const cliPath = path.join(binDir, process.platform === 'win32' ? 'lark-cli.CMD' : 'lark-cli');
+    await mkdir(binDir, { recursive: true });
+    await writeFile(cliPath, process.platform === 'win32' ? '@echo off\r\n' : '#!/bin/sh\nexit 0\n', 'utf8');
+    await chmod(cliPath, 0o755);
+
+    await expect(resolveCommandOnPath('lark-cli', { PATH: binDir })).resolves.toBe(cliPath);
   });
 });
 

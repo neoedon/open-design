@@ -83,9 +83,16 @@ export function DesignProjectSyncView({ active }: DesignProjectSyncViewProps) {
       const result = await syncDesignProjects();
       setMetadata(result.snapshot);
       setSource('daemon');
-      setNotice(`同步完成：${result.snapshot.summary.totalRecords} 条任务，${result.snapshot.summary.openRecords} 条待处理。`);
-      const nextStatus = await loadDesignProjectsStatus();
-      setStatus(nextStatus);
+      const successNotice = `同步完成：${result.snapshot.summary.totalRecords} 条任务，${result.snapshot.summary.openRecords} 条待处理。`;
+      setNotice(successNotice);
+      try {
+        const nextStatus = await loadDesignProjectsStatus();
+        setStatus(nextStatus);
+      } catch {
+        // The POST already persisted a valid snapshot. A best-effort status
+        // refresh must not turn that successful sync into a false failure.
+        setNotice(`${successNotice} 同步状态暂未刷新。`);
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '从飞书 Base 同步失败。');
     } finally {
@@ -98,7 +105,7 @@ export function DesignProjectSyncView({ active }: DesignProjectSyncViewProps) {
     : status?.reason === 'missing-config'
       ? '尚未配置设计项目 Wiki URL 或 token。'
       : status === null
-        ? '当前没有可用的本地 daemon 同步接口，只能读取已发布快照。'
+        ? '当前没有可用的本地 daemon 同步接口。'
         : null;
 
   return (
@@ -135,7 +142,7 @@ export function DesignProjectSyncView({ active }: DesignProjectSyncViewProps) {
               icon={<Cloud size={18} />}
               label="当前数据源"
               ok={Boolean(metadata)}
-              value={source === 'daemon' ? '本地快照' : source === 'published' ? '已发布快照' : '不可用'}
+              value={source === 'daemon' ? '本地快照' : '不可用'}
             />
           </div>
 
@@ -143,7 +150,7 @@ export function DesignProjectSyncView({ active }: DesignProjectSyncViewProps) {
 
           {metadata ? (
             <article className={styles.snapshotCard}>
-              <header><div><span className={styles.eyebrow}>当前快照</span><h2>{metadata.source.title}</h2></div><span className={styles.sourceBadge} data-source={source}>{source === 'daemon' ? '本地' : '静态发布'}</span></header>
+              <header><div><span className={styles.eyebrow}>当前快照</span><h2>{metadata.source.title}</h2></div><span className={styles.sourceBadge} data-source={source}>{source === 'daemon' ? '本地' : '不可用'}</span></header>
               <div className={styles.snapshotMeta}>
                 <SummaryItem label="数据表" value={metadata.source.tableName} />
                 <SummaryItem label="同步时间" value={formatTime(metadata.syncedAt)} />

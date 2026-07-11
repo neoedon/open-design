@@ -129,22 +129,18 @@ describe('derivePluginSourceLinks · url + local + bundled sources', () => {
     expect(out.sourceKindLabel).toBe('Local');
   });
 
-<<<<<<< HEAD
   it('routes bundled official sources to the viaim Design repo', () => {
-=======
-  it('keeps bundled official sources local instead of linking to Open Design', () => {
->>>>>>> de88ab56c2a7977aeb8979ee8163a07448a14b14
     const out = derivePluginSourceLinks(
       makeRecord({
         sourceKind: 'bundled',
         source:     'plugins/_official/scenarios/od-code-migration',
       }),
     );
-    expect(out.sourceUrl).toBeNull();
+    expect(out.sourceUrl).toBe('https://github.com/nexu-io/open-design');
     expect(out.sourceKindLabel).toBe('Official');
-    expect(out.sourceLabel).toBe('Bundled');
-    expect(out.authorProfileUrl).toBeNull();
-    expect(out.homepageUrl).toBeNull();
+    expect(out.sourceLabel).toBe('nexu-io/open-design');
+    expect(out.authorProfileUrl).toBe('https://github.com/nexu-io/open-design');
+    expect(out.homepageUrl).toBe('https://github.com/nexu-io/open-design');
   });
 });
 
@@ -191,7 +187,7 @@ describe('derivePluginSourceLinks · author + contribute', () => {
     expect(out.authorAvatarUrl).toBeNull();
   });
 
-  it('does not expose bundled Open Design homepage or contribution links', () => {
+  it('falls back to homepage for the contribute link when source is not github', () => {
     const out = derivePluginSourceLinks(
       makeRecord({
         sourceKind: 'bundled',
@@ -203,9 +199,9 @@ describe('derivePluginSourceLinks · author + contribute', () => {
         } as InstalledPluginRecord['manifest'],
       }),
     );
-    expect(out.contributeUrl).toBeNull();
-    expect(out.contributeOnGithub).toBe(false);
-    expect(out.homepageUrl).toBeNull();
+    expect(out.contributeUrl).toBe('https://github.com/nexu-io/open-design/issues/new');
+    expect(out.contributeOnGithub).toBe(true);
+    expect(out.homepageUrl).toBe('https://github.com/nexu-io/open-design');
   });
 
   it('drops malformed homepage values', () => {

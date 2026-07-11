@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { access, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { constants as fsConstants } from 'node:fs';
 import { delimiter, dirname, join } from 'node:path';
+import { createCommandInvocation, wellKnownUserToolchainBins } from '@open-design/platform';
 
 import type {
   DesignProjectDerivedRecord,
@@ -15,9 +16,11 @@ import type {
 } from '@open-design/contracts';
 
 const DEFAULT_TABLE_NAME = '设计项目需求提报';
-const DEFAULT_POLL_INTERVAL_MS = 10 * 60 * 1000;
 const RECORD_PAGE_SIZE = 200;
-const MAX_RECORD_PAGES = 1_000;
+const MAX_RECORD_PAGES = 100;
+const MAX_DESIGN_PROJECT_RECORDS = 20_000;
+const MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024;
+const MAX_SYNC_DURATION_MS = 10 * 60 * 1000;
 const LARK_CLI_TIMEOUT_MS = 120_000;
 const LARK_CLI_MAX_BUFFER_BYTES = 32 * 1024 * 1024;
 const SNAPSHOT_FILE_NAME = 'snapshot.json';
@@ -43,7 +46,7 @@ export class DesignProjectsServiceError extends Error {
 
 export interface DesignProjectsLarkCliRunner {
   isAvailable(): Promise<boolean>;
-  run(args: readonly string[]): Promise<unknown>;
+  run(args: readonly string[], stdin?: string): Promise<unknown>;
 }
 
 export interface DesignProjectsService {
@@ -58,12 +61,37 @@ export interface CreateDesignProjectsServiceOptions {
   env?: NodeJS.ProcessEnv;
   runner?: DesignProjectsLarkCliRunner;
   now?: () => Date;
+  /** Allows tests and constrained embedders to lower, but never raise, the safety limit. */
+  snapshotByteLimit?: number;
 }
 
 interface DesignProjectsConfig {
   wikiToken: string;
   publicWikiUrl: string;
   tableName: string;
+}
+
+function snapshotSizeLimitError(): DesignProjectsServiceError {
+  return new DesignProjectsServiceError(
+    'DESIGN_PROJECTS_SYNC_FAILED',
+    'The design project snapshot exceeded the 64 MiB safety limit.',
+  );
+}
+
+function normalizedSnapshotByteLimit(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) return MAX_SNAPSHOT_BYTES;
+  return Math.min(MAX_SNAPSHOT_BYTES, Math.max(1, Math.floor(value)));
+}
+
+function createSnapshotSizeBudget(limitBytes: number): { add(value: unknown): void } {
+  let consumedBytes = 0;
+  return {
+    add(value) {
+      const serialized = JSON.stringify(value);
+      consumedBytes += Buffer.byteLength(serialized === undefined ? 'null' : serialized);
+      if (consumedBytes > limitBytes) throw snapshotSizeLimitError();
+    },
+  };
 }
 
 function asRecord(value: unknown): JsonRecord | null {
@@ -100,24 +128,35 @@ function envPath(env: NodeJS.ProcessEnv): string {
   return typeof entry?.[1] === 'string' ? entry[1] : '';
 }
 
-async function commandOnPath(command: string, env: NodeJS.ProcessEnv): Promise<boolean> {
+function commandSearchDirectories(env: NodeJS.ProcessEnv): string[] {
+  return [...new Set([
+    ...envPath(env).split(delimiter).filter(Boolean),
+    ...wellKnownUserToolchainBins({ env }),
+  ])];
+}
+
+export async function resolveCommandOnPath(
+  command: string,
+  env: NodeJS.ProcessEnv,
+): Promise<string | null> {
   const extensions = process.platform === 'win32'
     ? stringValue(env.PATHEXT || '.EXE;.CMD;.BAT')
         .split(';')
         .map((extension) => extension.trim())
         .filter(Boolean)
     : [''];
-  for (const directory of envPath(env).split(delimiter).filter(Boolean)) {
+  for (const directory of commandSearchDirectories(env)) {
     for (const extension of extensions) {
+      const candidate = join(directory, `${command}${extension}`);
       try {
-        await access(join(directory, `${command}${extension}`), fsConstants.X_OK);
-        return true;
+        await access(candidate, fsConstants.X_OK);
+        return candidate;
       } catch {
         // Continue through PATH candidates.
       }
     }
   }
-  return false;
+  return null;
 }
 
 export function parseLarkCliJson(stdout: string): unknown {
@@ -150,35 +189,58 @@ export function parseLarkCliJson(stdout: string): unknown {
 export function createDefaultDesignProjectsLarkCliRunner(
   env: NodeJS.ProcessEnv = process.env,
 ): DesignProjectsLarkCliRunner {
+  let commandPromise: Promise<string | null> | null = null;
+  const resolveCommand = () => {
+    commandPromise ??= resolveCommandOnPath('lark-cli', env);
+    return commandPromise;
+  };
+  const pathKey = Object.keys(env).find((key) => key.toLowerCase() === 'path') ?? 'PATH';
+  const childEnv = {
+    ...env,
+    [pathKey]: commandSearchDirectories(env).join(delimiter),
+  };
   return {
-    isAvailable: () => commandOnPath('lark-cli', env),
-    run: (args) => new Promise((resolve, reject) => {
-      execFile(
-        'lark-cli',
-        [...args],
-        {
-          encoding: 'utf8',
-          env,
-          maxBuffer: LARK_CLI_MAX_BUFFER_BYTES,
-          timeout: LARK_CLI_TIMEOUT_MS,
-          windowsHide: true,
-        },
-        (error, stdout) => {
-          if (error) {
-            reject(new DesignProjectsServiceError(
-              'DESIGN_PROJECTS_SYNC_FAILED',
-              'Unable to refresh design projects from Feishu.',
-            ));
-            return;
-          }
-          try {
-            resolve(parseLarkCliJson(String(stdout ?? '')));
-          } catch (parseError) {
-            reject(parseError);
-          }
-        },
-      );
-    }),
+    isAvailable: async () => Boolean(await resolveCommand()),
+    run: async (args, stdin) => {
+      const command = await resolveCommand();
+      if (!command) {
+        throw new DesignProjectsServiceError(
+          'DESIGN_PROJECTS_CLI_UNAVAILABLE',
+          'The local Feishu CLI is unavailable.',
+        );
+      }
+      const invocation = createCommandInvocation({ command, args: [...args], env: childEnv });
+      return new Promise((resolve, reject) => {
+        const child = execFile(
+          invocation.command,
+          invocation.args,
+          {
+            encoding: 'utf8',
+            env: childEnv,
+            maxBuffer: LARK_CLI_MAX_BUFFER_BYTES,
+            timeout: LARK_CLI_TIMEOUT_MS,
+            windowsVerbatimArguments: invocation.windowsVerbatimArguments,
+            windowsHide: true,
+          },
+          (error, stdout) => {
+            if (error) {
+              reject(new DesignProjectsServiceError(
+                'DESIGN_PROJECTS_SYNC_FAILED',
+                'Unable to refresh design projects from Feishu.',
+              ));
+              return;
+            }
+            try {
+              resolve(parseLarkCliJson(String(stdout ?? '')));
+            } catch (parseError) {
+              reject(parseError);
+            }
+          },
+        );
+        child.stdin?.on('error', () => undefined);
+        child.stdin?.end(stdin);
+      });
+    },
   };
 }
 
@@ -387,11 +449,17 @@ function parseStoredSnapshot(value: unknown): DesignProjectsSnapshot {
   return value as DesignProjectsSnapshot;
 }
 
-async function writeSnapshotAtomically(filePath: string, snapshot: DesignProjectsSnapshot): Promise<void> {
+async function writeSnapshotAtomically(
+  filePath: string,
+  snapshot: DesignProjectsSnapshot,
+  limitBytes: number,
+): Promise<void> {
+  const body = `${JSON.stringify(snapshot, null, 2)}\n`;
+  if (Buffer.byteLength(body) > limitBytes) throw snapshotSizeLimitError();
   await mkdir(dirname(filePath), { recursive: true });
   const tempPath = `${filePath}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
   try {
-    await writeFile(tempPath, `${JSON.stringify(snapshot, null, 2)}\n`, {
+    await writeFile(tempPath, body, {
       encoding: 'utf8',
       mode: 0o600,
     });
@@ -405,9 +473,13 @@ async function writeSnapshotAtomically(filePath: string, snapshot: DesignProject
   }
 }
 
-async function runLark(runner: DesignProjectsLarkCliRunner, args: readonly string[]): Promise<JsonRecord> {
+async function runLark(
+  runner: DesignProjectsLarkCliRunner,
+  args: readonly string[],
+  stdin?: string,
+): Promise<JsonRecord> {
   try {
-    const result = asRecord(await runner.run(args));
+    const result = asRecord(await runner.run(args, stdin));
     if (!result) throw new Error('invalid response');
     return result;
   } catch (error) {
@@ -423,10 +495,22 @@ async function buildSnapshot(
   runner: DesignProjectsLarkCliRunner,
   config: DesignProjectsConfig,
   now: () => Date,
+  snapshotByteLimit: number,
 ): Promise<DesignProjectsSnapshot> {
+  const syncStartedAt = Date.now();
+  const snapshotBudget = createSnapshotSizeBudget(snapshotByteLimit);
+  const assertWithinSyncDeadline = () => {
+    if (Date.now() - syncStartedAt > MAX_SYNC_DURATION_MS) {
+      throw new DesignProjectsServiceError(
+        'DESIGN_PROJECTS_SYNC_FAILED',
+        'Design project sync exceeded the 10 minute safety limit.',
+      );
+    }
+  };
+  assertWithinSyncDeadline();
   const nodeEnvelope = await runLark(runner, [
-    'wiki', 'spaces', 'get_node', '--params', JSON.stringify({ token: config.wikiToken }),
-  ]);
+    'wiki', 'spaces', 'get_node', '--params', '-', '--format', 'json',
+  ], JSON.stringify({ token: config.wikiToken }));
   const node = asRecord(asRecord(nodeEnvelope.data)?.node);
   if (stringValue(node?.obj_type) !== 'bitable' || !stringValue(node?.obj_token)) {
     throw new DesignProjectsServiceError(
@@ -436,6 +520,7 @@ async function buildSnapshot(
   }
   const baseToken = stringValue(node?.obj_token);
 
+  assertWithinSyncDeadline();
   const tableEnvelope = await runLark(runner, [
     'base', '+table-list', '--base-token', baseToken, '--offset', '0', '--limit', '100',
   ]);
@@ -443,18 +528,18 @@ async function buildSnapshot(
     ? asRecord(tableEnvelope.data)?.tables as unknown[]
     : [];
   const tableRecords = tables.map(asRecord).filter((table): table is JsonRecord => table != null);
-  const selectedTable =
-    tableRecords.find((table) => stringValue(table.name) === config.tableName) ??
-    tableRecords.find((table) => stringValue(table.name).includes(config.tableName)) ??
-    tableRecords[0];
+  const selectedTable = tableRecords.find(
+    (table) => stringValue(table.name) === config.tableName,
+  );
   const tableId = stringValue(selectedTable?.id);
   if (!selectedTable || !tableId) {
     throw new DesignProjectsServiceError(
       'DESIGN_PROJECTS_SYNC_FAILED',
-      'No design project table was found in the configured Feishu Base.',
+      `The configured design project table was not found: ${config.tableName}.`,
     );
   }
 
+  assertWithinSyncDeadline();
   const fieldEnvelope = await runLark(runner, [
     'base', '+field-list', '--base-token', baseToken, '--table-id', tableId,
     '--offset', '0', '--limit', '200',
@@ -462,9 +547,13 @@ async function buildSnapshot(
   const rawFields = Array.isArray(asRecord(fieldEnvelope.data)?.fields)
     ? asRecord(fieldEnvelope.data)?.fields as unknown[]
     : [];
-  const fields = rawFields
-    .map(toSnapshotField)
-    .filter((field): field is DesignProjectSnapshotField => field != null);
+  const fields: DesignProjectSnapshotField[] = [];
+  for (const rawField of rawFields) {
+    const field = toSnapshotField(rawField);
+    if (!field) continue;
+    snapshotBudget.add(field);
+    fields.push(field);
+  }
   const fieldById = new Map(fields.map((field) => [field.id, field]));
 
   const records: DesignProjectSnapshotRecord[] = [];
@@ -474,6 +563,7 @@ async function buildSnapshot(
   let pageCount = 0;
 
   while (hasMore) {
+    assertWithinSyncDeadline();
     pageCount += 1;
     if (pageCount > MAX_RECORD_PAGES) {
       throw new DesignProjectsServiceError(
@@ -494,7 +584,10 @@ async function buildSnapshot(
     if (Array.isArray(page.ignored_fields)) {
       for (const rawIgnored of page.ignored_fields) {
         const ignored = toSnapshotField(rawIgnored);
-        if (ignored) ignoredFields.set(ignored.id || ignored.name, ignored);
+        if (ignored) {
+          snapshotBudget.add(ignored);
+          ignoredFields.set(ignored.id || ignored.name, ignored);
+        }
       }
     }
 
@@ -509,12 +602,20 @@ async function buildSnapshot(
         fieldsByName[fieldName] = sanitizeDesignProjectFieldValue(value);
       });
       const recordId = recordIds[rowIndex] || `offset-${offset + rowIndex}`;
-      records.push({
+      const record: DesignProjectSnapshotRecord = {
         id: recordId,
         recordId,
         fields: fieldsByName,
         derived: deriveRecord(rawFieldsByName),
-      });
+      };
+      snapshotBudget.add(record);
+      records.push(record);
+      if (records.length > MAX_DESIGN_PROJECT_RECORDS) {
+        throw new DesignProjectsServiceError(
+          'DESIGN_PROJECTS_SYNC_FAILED',
+          `Design project sync exceeded ${MAX_DESIGN_PROJECT_RECORDS} records.`,
+        );
+      }
     });
 
     hasMore = page.has_more === true;
@@ -522,26 +623,30 @@ async function buildSnapshot(
   }
 
   const tableName = stringValue(selectedTable.name) || config.tableName;
+  const source = {
+    title: stringValue(node?.title) || '设计项目需求提报系统',
+    wikiUrl: config.publicWikiUrl,
+    tableName,
+    includedTables: [tableName],
+    excludedTables: tableRecords
+      .filter((table) => stringValue(table.id) !== tableId)
+      .map((table) => stringValue(table.name))
+      .filter(Boolean),
+    syncMode: 'one-way-full-snapshot' as const,
+  };
+  const summary = buildSummary(records);
+  snapshotBudget.add(source);
+  snapshotBudget.add(summary);
+  assertWithinSyncDeadline();
   return {
     schemaVersion: 1,
     generatedBy: 'open-design-daemon',
     syncedAt: now().toISOString(),
-    source: {
-      title: stringValue(node?.title) || '设计项目需求提报系统',
-      wikiUrl: config.publicWikiUrl,
-      tableName,
-      includedTables: [tableName],
-      excludedTables: tableRecords
-        .filter((table) => stringValue(table.id) !== tableId)
-        .map((table) => stringValue(table.name))
-        .filter(Boolean),
-      syncMode: 'one-way-full-snapshot',
-      pollIntervalMs: DEFAULT_POLL_INTERVAL_MS,
-    },
+    source,
     fields,
     ignoredFields: [...ignoredFields.values()],
     records,
-    summary: buildSummary(records),
+    summary,
   };
 }
 
@@ -551,6 +656,7 @@ export function createDesignProjectsService(
   const env = options.env ?? process.env;
   const runner = options.runner ?? createDefaultDesignProjectsLarkCliRunner(env);
   const now = options.now ?? (() => new Date());
+  const snapshotByteLimit = normalizedSnapshotByteLimit(options.snapshotByteLimit);
   const snapshotPath = join(options.dataDir, 'design-projects', SNAPSHOT_FILE_NAME);
   let syncInFlight: Promise<DesignProjectsSnapshot> | null = null;
 
@@ -581,8 +687,8 @@ export function createDesignProjectsService(
         'The local Feishu CLI is unavailable.',
       );
     }
-    const snapshot = await buildSnapshot(runner, config, now);
-    await writeSnapshotAtomically(snapshotPath, snapshot);
+    const snapshot = await buildSnapshot(runner, config, now, snapshotByteLimit);
+    await writeSnapshotAtomically(snapshotPath, snapshot, snapshotByteLimit);
     return snapshot;
   };
 

@@ -26,8 +26,8 @@ describe('entry navigation rail overflow', () => {
     );
   });
 
-  it('keeps the footer outside the scrolling group', () => {
-    expect(firstRule('.entry-nav-rail__footer')).toContain('flex: 0 0 auto');
+  it('does not restore the removed community-help footer', () => {
+    expect(css).not.toContain('.entry-nav-rail__footer');
   });
 
   it('keeps navigation targets at their usable size inside the short-height scroller', () => {

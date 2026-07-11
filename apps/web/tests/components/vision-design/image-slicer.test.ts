@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { calculateSlicePlan } from '../../../src/components/vision-design/image-slicer';
+import {
+  calculateSlicePlan,
+  parseSupportedImageDimensions,
+} from '../../../src/components/vision-design/image-slicer';
 
 describe('calculateSlicePlan', () => {
   it('splits a 5000 x 5000 image into four 4096-bounded tiles', () => {
@@ -42,5 +45,17 @@ describe('calculateSlicePlan', () => {
       '最多生成 2048 张切片',
     );
     expect(calculateSlicePlan(45, 45, { maxSliceWidth: 1, maxSliceHeight: 1 }).slices).toHaveLength(2025);
+  });
+
+  it('reads dimensions from a PNG header before browser decoding', () => {
+    const bytes = new Uint8Array(24);
+    bytes.set([0x89, 0x50, 0x4e, 0x47], 0);
+    bytes.set([0x49, 0x48, 0x44, 0x52], 12);
+    const view = new DataView(bytes.buffer);
+    view.setUint32(16, 5000);
+    view.setUint32(20, 4000);
+
+    expect(parseSupportedImageDimensions(bytes)).toEqual({ width: 5000, height: 4000 });
+    expect(parseSupportedImageDimensions(new Uint8Array([1, 2, 3]))).toBeNull();
   });
 });

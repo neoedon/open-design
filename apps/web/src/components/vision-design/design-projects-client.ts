@@ -4,14 +4,11 @@ import type {
   DesignProjectsSyncResponse,
 } from '@open-design/contracts';
 
-import { visionDesignAssetUrl } from './config';
-
 const SNAPSHOT_API = '/api/design-projects/snapshot';
 const STATUS_API = '/api/design-projects/status';
 const SYNC_API = '/api/design-projects/sync';
-const PUBLISHED_SNAPSHOT_URL = visionDesignAssetUrl('data/feishu-base-snapshot.json');
 
-export type DesignProjectsDataSource = 'daemon' | 'published';
+export type DesignProjectsDataSource = 'daemon';
 
 export interface LoadedDesignProjectsSnapshot {
   snapshot: DesignProjectsSnapshot;
@@ -56,35 +53,25 @@ async function responseMessage(response: Response): Promise<string> {
   return `HTTP ${response.status}`;
 }
 
-async function fetchPublishedSnapshot(): Promise<LoadedDesignProjectsSnapshot> {
-  const response = await fetch(`${PUBLISHED_SNAPSHOT_URL}?t=${Date.now()}`, {
-    cache: 'no-store',
-  });
-  if (!response.ok) {
-    throw new DesignProjectsRequestError(
-      `已发布快照加载失败（HTTP ${response.status}）。`,
-      response.status,
-    );
-  }
-  const payload: unknown = await response.json().catch(() => null);
-  if (!isDesignProjectsSnapshot(payload)) {
-    throw new DesignProjectsRequestError('已发布快照格式无效。');
-  }
-  return { snapshot: payload, source: 'published' };
-}
-
 export async function loadDesignProjectsSnapshot(): Promise<LoadedDesignProjectsSnapshot> {
   let response: Response;
   try {
     response = await fetch(SNAPSHOT_API, { cache: 'no-store' });
   } catch {
-    return fetchPublishedSnapshot();
+    throw new DesignProjectsRequestError('无法连接本地 Open Design daemon。');
   }
 
-  if (!response.ok) return fetchPublishedSnapshot();
+  if (!response.ok) {
+    throw new DesignProjectsRequestError(
+      `设计项目快照加载失败：${await responseMessage(response)}`,
+      response.status,
+    );
+  }
 
   const payload: unknown = await response.json().catch(() => null);
-  if (!isDesignProjectsSnapshot(payload)) return fetchPublishedSnapshot();
+  if (!isDesignProjectsSnapshot(payload)) {
+    throw new DesignProjectsRequestError('本地设计项目快照格式无效。');
+  }
   return { snapshot: payload, source: 'daemon' };
 }
 
@@ -125,5 +112,4 @@ export const DESIGN_PROJECTS_ENDPOINTS = {
   snapshot: SNAPSHOT_API,
   status: STATUS_API,
   sync: SYNC_API,
-  publishedSnapshot: PUBLISHED_SNAPSHOT_URL,
 } as const;

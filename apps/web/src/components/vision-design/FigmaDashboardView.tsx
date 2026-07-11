@@ -4,17 +4,16 @@ import { useEffect, useState } from 'react';
 import { ExternalLink, FileClock, FolderTree, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@open-design/components';
 
-import { VISION_DESIGN_BASE_URL } from './config';
+import { VISION_DESIGN_FIGMA_DASHBOARD_URL } from './config';
 import { computedTokenHex, mixHexColors, type FigmaDashboardViewMode } from './figma-dashboard';
 import styles from './FigmaDashboardView.module.css';
 
 export interface FigmaDashboardViewProps {
   active: boolean;
+  dashboardUrl?: string;
 }
 
-const DASHBOARD_URL = `${VISION_DESIGN_BASE_URL}/tools/figma-project-dashboard/figma-project-changelog.html`;
-
-function buildDashboardUrl(view: FigmaDashboardViewMode): string {
+function buildDashboardUrl(dashboardUrl: string, view: FigmaDashboardViewMode): string {
   const computed = getComputedStyle(document.documentElement);
   const surface = computedTokenHex(computed, '--bg-panel', '#FDFCFA');
   const accent = computedTokenHex(computed, '--accent', '#C96442');
@@ -37,10 +36,15 @@ function buildDashboardUrl(view: FigmaDashboardViewMode): string {
     uiSize: '13',
     codeSize: '12',
   });
-  return `${DASHBOARD_URL}?${params.toString()}`;
+  const url = new URL(dashboardUrl);
+  for (const [key, value] of params) url.searchParams.set(key, value);
+  return url.toString();
 }
 
-export function FigmaDashboardView({ active }: FigmaDashboardViewProps) {
+export function FigmaDashboardView({
+  active,
+  dashboardUrl = VISION_DESIGN_FIGMA_DASHBOARD_URL,
+}: FigmaDashboardViewProps) {
   const [view, setView] = useState<FigmaDashboardViewMode>('map');
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,14 +52,16 @@ export function FigmaDashboardView({ active }: FigmaDashboardViewProps) {
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
-    if (!active) {
+    if (!active || !dashboardUrl) {
       setSrc(null);
+      setLoading(false);
+      setError(active ? '未配置受信任的 Figma Dashboard 地址。' : null);
       return;
     }
     setLoading(true);
     setError(null);
-    setSrc(buildDashboardUrl(view));
-  }, [active, revision, view]);
+    setSrc(buildDashboardUrl(dashboardUrl, view));
+  }, [active, dashboardUrl, revision, view]);
 
   useEffect(() => {
     if (!active) return undefined;
@@ -81,11 +87,13 @@ export function FigmaDashboardView({ active }: FigmaDashboardViewProps) {
         <div>
           <span className={styles.eyebrow}>Figma REST API · 嵌入工作台</span>
           <h1 id="figma-dashboard-title">Figma 项目 Dashboard</h1>
-          <p>浏览项目、文件与 Page Map，或检查版本变更记录。Figma token 仅保存在 Dashboard 的本地存储中。</p>
+          <p>浏览项目、文件与 Page Map，或检查版本变更记录。仅配置并使用你信任的 Dashboard 地址。</p>
         </div>
         <div className={styles.actions}>
-          <Button variant="ghost" onClick={() => setRevision((value) => value + 1)}><RefreshCw aria-hidden="true" size={14} />重新加载</Button>
-          <Button variant="ghost" onClick={() => window.open(`${DASHBOARD_URL}?view=${view}`, '_blank', 'noopener,noreferrer')}><ExternalLink aria-hidden="true" size={14} />在新窗口打开</Button>
+          <Button variant="ghost" disabled={!dashboardUrl} onClick={() => setRevision((value) => value + 1)}><RefreshCw aria-hidden="true" size={14} />重新加载</Button>
+          <Button variant="ghost" disabled={!dashboardUrl} onClick={() => {
+            if (dashboardUrl) window.open(buildDashboardUrl(dashboardUrl, view), '_blank', 'noopener,noreferrer');
+          }}><ExternalLink aria-hidden="true" size={14} />在新窗口打开</Button>
         </div>
       </header>
 
@@ -97,7 +105,7 @@ export function FigmaDashboardView({ active }: FigmaDashboardViewProps) {
       <div className={styles.frameShell}>
         {src ? (
           <iframe
-            key={src}
+            key={`${src}:${revision}`}
             className={styles.frame}
             src={src}
             title={`Figma 项目 ${view === 'map' ? 'Page Map' : 'Changelog'}`}
@@ -108,7 +116,7 @@ export function FigmaDashboardView({ active }: FigmaDashboardViewProps) {
           />
         ) : null}
         {loading ? <div className={styles.overlay}><Loader2 aria-hidden="true" className={styles.spin} size={22} /><strong>正在加载 {view === 'map' ? 'Page Map' : 'Changelog'}…</strong></div> : null}
-        {error ? <div className={styles.overlay} data-tone="error"><strong>{error}</strong><Button variant="ghost" onClick={() => setRevision((value) => value + 1)}>重试</Button></div> : null}
+        {error ? <div className={styles.overlay} data-tone="error"><strong>{error}</strong>{dashboardUrl ? <Button variant="ghost" onClick={() => setRevision((value) => value + 1)}>重试</Button> : null}</div> : null}
         {!active ? <div className={styles.overlay}><FolderTree aria-hidden="true" size={22} /><strong>打开此导航后加载 Dashboard</strong></div> : null}
       </div>
     </section>
