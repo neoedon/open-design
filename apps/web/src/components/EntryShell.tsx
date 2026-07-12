@@ -210,7 +210,15 @@ type OnboardingAgentTestState =
   | { status: 'running'; inputKey: string }
   | { status: 'done'; inputKey: string; result: ConnectionTestResponse };
 
+<<<<<<< HEAD
 // The topbar chips (model switcher and Use everywhere)
+=======
+<<<<<<< HEAD
+// The topbar chips (model switcher, Use everywhere)
+=======
+// The topbar chips (model switcher and Use everywhere)
+>>>>>>> main
+>>>>>>> dev-import-0.9
 // collapse into the settings dropdown when the viewport gets
 // narrow. The transition is driven entirely by CSS @media queries
 // in `entry-layout.css` so server and client render identical
@@ -2534,7 +2542,15 @@ function OnboardingView({
           <span
             className="onboarding-cloud__logo"
             role="img"
+<<<<<<< HEAD
             aria-label={t('app.brand')}
+=======
+<<<<<<< HEAD
+            aria-label="viaim Design"
+=======
+            aria-label={t('app.brand')}
+>>>>>>> main
+>>>>>>> dev-import-0.9
           />
           <h1 className="onboarding-cloud__title">{t('settings.onboardingCloudTitle')}</h1>
           <p className="onboarding-cloud__body">{t('settings.onboardingCloudBody')}</p>
@@ -2628,7 +2644,15 @@ function OnboardingView({
           )}
         </div>
         <footer className="onboarding-cloud__footer">
+<<<<<<< HEAD
           © {new Date().getFullYear()} {t('app.brand')} · {t('settings.onboardingCloudRights')}
+=======
+<<<<<<< HEAD
+          © {new Date().getFullYear()} viaim Design · {t('settings.onboardingCloudRights')}
+=======
+          © {new Date().getFullYear()} {t('app.brand')} · {t('settings.onboardingCloudRights')}
+>>>>>>> main
+>>>>>>> dev-import-0.9
         </footer>
       </section>
     );

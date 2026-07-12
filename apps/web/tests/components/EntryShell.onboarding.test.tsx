@@ -323,9 +323,24 @@ describe('EntryShell settings menu', () => {
     expect(screen.getByTestId('entry-settings-menu')).toBeTruthy();
     expect(screen.getByText('Language')).toBeTruthy();
     expect(screen.getByText('Appearance')).toBeTruthy();
+<<<<<<< HEAD
     expect(screen.queryByRole('menuitem', { name: /Join Discord/i })).toBeNull();
     expect(screen.queryByRole('menuitem', { name: /Teams/i })).toBeNull();
     expect(screen.queryByRole('menuitem', { name: /Follow/i })).toBeNull();
+=======
+<<<<<<< HEAD
+    expect(screen.queryByRole('menuitem', { name: /Discord/i })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: /Open Design/i })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: /Teams/i })).toBeNull();
+    expect(screen.queryByTestId('entry-star-badge')).toBeNull();
+    expect(screen.queryByTestId('entry-workspace-teams')).toBeNull();
+    expect(screen.queryByTestId('entry-discord-badge')).toBeNull();
+=======
+    expect(screen.queryByRole('menuitem', { name: /Join Discord/i })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: /Teams/i })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: /Follow/i })).toBeNull();
+>>>>>>> main
+>>>>>>> dev-import-0.9
 
     fireEvent.click(screen.getByTestId('entry-settings-open-details'));
 

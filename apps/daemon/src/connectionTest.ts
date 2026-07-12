@@ -2226,7 +2226,15 @@ async function testAgentConnectionInternal(
         SMOKE_PROMPT,
         [],
         [],
+<<<<<<< HEAD
         { model: input.model ?? null, reasoning: connectionReasoning ?? null },
+=======
+<<<<<<< HEAD
+        { model: input.model ?? null, reasoning: connectionReasoning },
+=======
+        { model: input.model ?? null, reasoning: connectionReasoning ?? null },
+>>>>>>> main
+>>>>>>> dev-import-0.9
         {
           cwd: tempDir,
           ...(promptFile ? { promptFilePath: promptFile.path } : {}),

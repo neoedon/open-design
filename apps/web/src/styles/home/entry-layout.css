@@ -206,6 +206,19 @@
   min-height: 0;
   flex: 1 1 auto;
 }
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+.entry-nav-rail__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding-bottom: 4px;
+  flex: 0 0 auto;
+}
+>>>>>>> dev-import-0.9
 @media (max-height: 720px) {
   .entry-nav-rail__group {
     overflow-y: auto;
@@ -217,6 +230,14 @@
     display: none;
   }
 }
+<<<<<<< HEAD
+=======
+.entry-nav-rail__divider {
+  display: none;
+}
+=======
+>>>>>>> main
+>>>>>>> dev-import-0.9
 .entry-nav-rail__logo-divider {
   display: none;
 }

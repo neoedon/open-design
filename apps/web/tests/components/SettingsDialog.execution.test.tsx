@@ -4734,10 +4734,45 @@ describe('SettingsDialog about interactions', () => {
     expect(screen.getByText(en['settings.updateStatusDevelopment'])).toBeTruthy();
     expect(screen.queryByRole('button', { name: en['settings.installLatest'] })).toBeNull();
     expect(screen.queryByRole('combobox')).toBeNull();
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+
+>>>>>>> dev-import-0.9
     expect(screen.queryByRole('button', { name: en['settings.updateViewReleases'] })).toBeNull();
     expect(openExternalUrlMock).not.toHaveBeenCalled();
   });
 
+<<<<<<< HEAD
+=======
+  it('updates the silent-update preference without retaining the React event', () => {
+    renderSettingsDialog(
+      { mode: 'daemon', agentId: 'codex', allowSilentUpdates: false },
+      {
+        initialSection: 'about',
+        appVersionInfo: {
+          version: '0.4.1',
+          channel: 'beta',
+          packaged: false,
+          platform: 'darwin',
+          arch: 'arm64',
+        },
+      },
+    );
+
+    const checkbox = screen.getByRole('checkbox', {
+      name: new RegExp(en['settings.allowSilentUpdates'], 'i'),
+    }) as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+    fireEvent.click(checkbox);
+    expect(checkbox.checked).toBe(true);
+=======
+    expect(screen.queryByRole('button', { name: en['settings.updateViewReleases'] })).toBeNull();
+    expect(openExternalUrlMock).not.toHaveBeenCalled();
+>>>>>>> main
+  });
+
+>>>>>>> dev-import-0.9
   it('downloads an available packaged update from the about page', async () => {
     const available = updateStatus({
       availableVersion: '1.2.3-beta.4',

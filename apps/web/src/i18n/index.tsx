@@ -89,12 +89,24 @@ export function resolveSystemLocale(languages: readonly string[]): Locale | null
   return null;
 }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+// viaim Design starts in Simplified Chinese. A deliberate user selection
+// remains authoritative across subsequent launches; legacy or auto-detected
+// values without the manual marker do not override the product default.
+=======
+>>>>>>> dev-import-0.9
 // First-run defaults to Simplified Chinese. A deliberate saved language
 // choice still wins, so existing users keep their explicit preference.
 // Untagged legacy values are ignored because they may have come from the
 // former OS/browser auto-detection path.
 // Exported so tests can pin the priority chain without spinning up the
 // full I18nProvider.
+<<<<<<< HEAD
+=======
+>>>>>>> main
+>>>>>>> dev-import-0.9
 export function detectInitialLocale(): Locale {
   if (typeof window === 'undefined') return 'zh-CN';
   let storedLocale: string | null = null;
