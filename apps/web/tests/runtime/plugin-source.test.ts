@@ -129,15 +129,7 @@ describe('derivePluginSourceLinks · url + local + bundled sources', () => {
     expect(out.sourceKindLabel).toBe('Local');
   });
 
-<<<<<<< HEAD
   it('routes bundled official sources to the viaim Design repo', () => {
-=======
-<<<<<<< HEAD
-  it('keeps bundled official sources local instead of linking to Open Design', () => {
-=======
-  it('routes bundled official sources to the viaim Design repo', () => {
->>>>>>> main
->>>>>>> dev-import-0.9
     const out = derivePluginSourceLinks(
       makeRecord({
         sourceKind: 'bundled',
